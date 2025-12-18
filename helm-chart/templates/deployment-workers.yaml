@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "test-app.fullname" . }}
+  name: {{ include "test-app.fullname" . }}-workers
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -13,7 +13,7 @@ spec:
         app: {{ .Values.selectorLabels.app }}
     spec:
       containers:
-        - name: {{ include "test-app.fullname" . }}
+        - name: {{ include "test-app.fullname" . }}-workers
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
