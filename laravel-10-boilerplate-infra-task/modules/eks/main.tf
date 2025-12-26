@@ -1,3 +1,4 @@
+# EKS CLUSTER IAM ROLE
 data "aws_iam_policy_document" "eks_cluster_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -24,6 +25,7 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_controller" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
 }
 
+# EKS CLUSTER
 resource "aws_eks_cluster" "this" {
   name     = var.name_prefix
   version  = var.cluster_version
@@ -31,7 +33,6 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     subnet_ids              = var.private_subnet_ids
-    security_group_ids      = [var.eks_control_sg_id]
     endpoint_private_access = true
     endpoint_public_access  = true
   }
@@ -43,6 +44,9 @@ resource "aws_eks_cluster" "this" {
     aws_iam_role_policy_attachment.eks_vpc_controller
   ]
 }
+
+
+# EKS NODE IAM ROLE
 
 data "aws_iam_policy_document" "eks_node_assume" {
   statement {
@@ -75,6 +79,7 @@ resource "aws_iam_role_policy_attachment" "node_ecr" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# EKS NODE GROUP
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${var.name_prefix}-ng"
@@ -90,11 +95,6 @@ resource "aws_eks_node_group" "this" {
 
   update_config {
     max_unavailable = 1
-  }
-
-  remote_access {
-    ec2_ssh_key               = null
-    source_security_group_ids = []
   }
 
   tags = var.tags

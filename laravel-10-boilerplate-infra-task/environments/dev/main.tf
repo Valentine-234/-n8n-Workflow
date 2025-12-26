@@ -27,7 +27,7 @@ module "eks" {
   eks_control_sg_id   = module.vpc.eks_control_sg_id
   eks_nodes_sg_id     = module.vpc.eks_nodes_sg_id
   node_instance_types = var.node_instance_types
-  node_desired_size   = var.node_desired_size
+  node_desired_size   = var.node_desired_size 
   node_min_size       = var.node_min_size
   node_max_size       = var.node_max_size
   tags                = local.tags
