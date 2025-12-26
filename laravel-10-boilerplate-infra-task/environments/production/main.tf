@@ -8,14 +8,14 @@ locals {
 }
 
 module "network" {
-  source               = "../../modules/network"
-  name_prefix          = local.name_prefix
+  source               = "../../modules/vpc"
+  environment          = var.env
   vpc_cidr             = var.vpc_cidr
-  azs                  = var.azs
   private_subnet_cidrs = var.private_subnet_cidrs
   public_subnet_cidrs  = var.public_subnet_cidrs
   tags                 = local.tags
 }
+
 
 module "eks" {
   source              = "../../modules/eks"
