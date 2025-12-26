@@ -7,7 +7,7 @@ output "cluster_endpoint" {
 }
 
 output "cluster_ca" {
-  value = base64decode(module.eks.cluster_certificate_authority_data)
+  value = module.eks.cluster_ca
 }
 
 output "vpc_id" {

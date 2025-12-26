@@ -7,5 +7,9 @@ output "cluster_endpoint" {
 }
 
 output "cluster_ca" {
-  value = aws_eks_cluster.this.certificate_authority[0].data
+  value = base64decode(
+    aws_eks_cluster.this.certificate_authority[0].data
+  )
 }
+
+
