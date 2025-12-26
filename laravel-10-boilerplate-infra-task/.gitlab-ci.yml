@@ -8,7 +8,12 @@ image:
   name: hashicorp/terraform:1.10
   entrypoint: [""]
 
+variables:
+  TF_ENV_PATH: environments/dev
+
+########################
 # STS
+########################
 
 sts:
   stage: sts
@@ -16,11 +21,8 @@ sts:
     GITLAB_OIDC_TOKEN:
       aud: https://gitlab.com
   before_script:
-    # Install AWS CLI
     - apk --no-cache add curl python3 py3-pip
     - pip3 install --no-cache-dir awscli --break-system-packages
-
-    # Establish connection with AWS to get access credentials
     - >
       export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s"
       $(aws sts assume-role-with-web-identity
@@ -34,18 +36,18 @@ sts:
   script:
     - echo "Connected to AWS from GitLab and retrieved credentials"
 
+########################
 # INIT
+########################
+
 init:
   stage: init
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://gitlab.com
   before_script:
-    # Install AWS CLI
     - apk --no-cache add curl python3 py3-pip
     - pip3 install --no-cache-dir awscli --break-system-packages
-
-    # Establish connection with AWS to get access credentials
     - >
       export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s"
       $(aws sts assume-role-with-web-identity
@@ -57,26 +59,26 @@ init:
       --output text))
     - aws sts get-caller-identity
   script:
+    - cd ${TF_ENV_PATH}
     - terraform init -input=false
   artifacts:
     paths:
-      - .terraform/
-      - .terraform.lock.hcl
+      - ${TF_ENV_PATH}/.terraform/
+      - ${TF_ENV_PATH}/.terraform.lock.hcl
     expire_in: 1 day
 
-
+########################
 # PLAN
+########################
+
 plan:
   stage: plan
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://gitlab.com
   before_script:
-    # Install AWS CLI
     - apk --no-cache add curl python3 py3-pip
     - pip3 install --no-cache-dir awscli --break-system-packages
-
-    # Establish connection with AWS to get access credentials
     - >
       export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s"
       $(aws sts assume-role-with-web-identity
@@ -89,27 +91,27 @@ plan:
     - aws sts get-caller-identity
   needs: ["init"]
   script:
+    - cd ${TF_ENV_PATH}
     - terraform validate
     - terraform plan -out=tfplan
   artifacts:
     name: terraform-plan
     paths:
-      - tfplan
+      - ${TF_ENV_PATH}/tfplan
     expire_in: 1 day
 
-
+########################
 # APPLY
+########################
+
 apply:
   stage: apply
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://gitlab.com
   before_script:
-    # Install AWS CLI
     - apk --no-cache add curl python3 py3-pip
     - pip3 install --no-cache-dir awscli --break-system-packages
-
-    # Establish connection with AWS to get access credentials
     - >
       export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s"
       $(aws sts assume-role-with-web-identity
@@ -124,4 +126,5 @@ apply:
   when: manual
   allow_failure: false
   script:
+    - cd ${TF_ENV_PATH}
     - terraform apply tfplan
