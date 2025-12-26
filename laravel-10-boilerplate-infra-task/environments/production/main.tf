@@ -32,3 +32,29 @@ module "eks" {
   node_max_size       = var.node_max_size
   tags                = local.tags
 }
+
+
+module "security" {
+  source      = "../../modules/security-group"
+  vpc_id      = module.vpc.vpc_id
+  environment = var.env
+  tags        = local.tags
+}
+
+
+module "rds" {
+  source = "../../modules/rds"
+
+  project = var.project
+  env     = var.env
+  tags    = var.tags
+
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnets
+
+  db_name           = var.db_name
+  db_username       = var.db_username
+  db_password       = var.db_password
+  instance_class    = var.instance_class
+  allocated_storage = var.allocated_storage
+}
