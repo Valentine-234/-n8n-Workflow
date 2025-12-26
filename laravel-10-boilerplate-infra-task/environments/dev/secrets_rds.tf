@@ -1,6 +1,7 @@
-resource "aws_secretsmanager_secret" "rds" {
-  name = "${var.project}/${var.env}/rds"
+# RDS SECRET (CREATE + MANAGE)
 
+resource "aws_secretsmanager_secret" "rds" {
+  name        = "${var.project}/${var.env}/rds"
   description = "RDS credentials for ${var.project} ${var.env}"
 
   recovery_window_in_days = 7
@@ -11,11 +12,16 @@ resource "aws_secretsmanager_secret" "rds" {
   )
 }
 
+
+# RANDOM PASSWORD
+
 resource "random_password" "rds" {
   length  = 32
   special = true
 }
 
+
+# SECRET VALUE
 resource "aws_secretsmanager_secret_version" "rds" {
   secret_id = aws_secretsmanager_secret.rds.id
 
@@ -26,16 +32,12 @@ resource "aws_secretsmanager_secret_version" "rds" {
   })
 }
 
-data "aws_secretsmanager_secret_version" "rds" {
-  secret_id = aws_secretsmanager_secret.rds.id
 
-  depends_on = [
-    aws_secretsmanager_secret_version.rds
-  ]
-}
-
+# LOCALS (USE DIRECTLY)
 locals {
-  rds_secret = jsondecode(
-    data.aws_secretsmanager_secret_version.rds.secret_string
-  )
+  rds_secret = {
+    db_name  = var.db_name
+    username = var.db_username
+    password = random_password.rds.result
+  }
 }

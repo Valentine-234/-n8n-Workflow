@@ -50,9 +50,9 @@ module "rds" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnets
 
-  db_name           = var.db_name
-  db_username       = var.db_username
-  db_password       = var.db_password
+  db_name           = local.rds_secret.db_name
+  db_username       = local.rds_secret.username
+  db_password       = local.rds_secret.password
   instance_class    = var.instance_class
   allocated_storage = var.allocated_storage
 }
