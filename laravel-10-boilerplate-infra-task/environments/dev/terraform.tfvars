@@ -26,15 +26,15 @@ private_subnet_cidrs = [
 
 # EKS
 cluster_version     = "1.30"
-node_instance_types = ["t3.medium"]
+node_instance_types = ["t2.micro"]
 
 node_desired_size = 2
 node_min_size     = 2
 node_max_size     = 4
 
 # RDS
-db_name     = "boilerplate-db"
-db_username = "boilerplate-db"
+db_name     = "boilerplatedb"
+db_username = "boilerplatedb"
 db_password = "task12345"
 
 instance_class    = "db.t3.micro"
