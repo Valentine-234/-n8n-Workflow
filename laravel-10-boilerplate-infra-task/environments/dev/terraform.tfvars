@@ -33,9 +33,9 @@ node_min_size     = 2
 node_max_size     = 4
 
 # RDS
-db_name     = local.rds_secret.db_name
-db_username = local.rds_secret.username
-db_password = local.rds_secret.password
+db_name     = "boilerplate-db"
+db_username = "boilerplate-db"
+db_password = "task12345"
 
 instance_class    = "db.t3.micro"
 allocated_storage = 20
