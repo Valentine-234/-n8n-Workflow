@@ -11,10 +11,7 @@ image:
 variables:
   TF_ENV_PATH: laravel-10-boilerplate-task/environments/dev
 
-########################
 # STS
-########################
-
 sts:
   stage: sts
   id_tokens:
@@ -36,10 +33,8 @@ sts:
   script:
     - echo "Connected to AWS from GitLab and retrieved credentials"
 
-########################
-# INIT
-########################
 
+# INIT
 init:
   stage: init
   id_tokens:
@@ -67,10 +62,8 @@ init:
       - ${TF_ENV_PATH}/.terraform.lock.hcl
     expire_in: 1 day
 
-########################
-# PLAN
-########################
 
+# PLAN
 plan:
   stage: plan
   id_tokens:
@@ -100,10 +93,8 @@ plan:
       - ${TF_ENV_PATH}/tfplan
     expire_in: 1 day
 
-########################
-# APPLY
-########################
 
+# APPLY
 apply:
   stage: apply
   id_tokens:
