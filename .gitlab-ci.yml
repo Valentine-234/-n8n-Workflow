@@ -9,7 +9,7 @@ image:
   entrypoint: [""]
 
 variables:
-  TF_ENV_PATH: laravel-10-boilerplate-task/environments/dev
+  TF_ENV_PATH: laravel-10-boilerplate-infra-task/environments/dev
 
 # STS
 sts:
