@@ -1,5 +1,5 @@
 # Core
-aws_region = "eu-west-1"
+aws_region = "us-west-2"
 env        = "dev"
 project    = "laravel-10-boilerplate-task"
 
@@ -7,9 +7,9 @@ project    = "laravel-10-boilerplate-task"
 vpc_cidr = "10.10.0.0/16"
 
 azs = [
-  "eu-west-1a",
-  "eu-west-1b",
-  "eu-west-1c"
+  "us-west-2a",
+  "us-west-2b",
+  "us-west-2c"
 ]
 
 public_subnet_cidrs = [
