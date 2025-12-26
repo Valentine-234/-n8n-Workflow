@@ -7,7 +7,7 @@ locals {
   }
 }
 
-module "network" {
+module "vpc" {
   source               = "../../modules/vpc"
   environment          = var.env
   vpc_cidr             = var.vpc_cidr
@@ -21,11 +21,11 @@ module "eks" {
   source              = "../../modules/eks"
   name_prefix         = local.name_prefix
   cluster_version     = var.cluster_version
-  vpc_id              = module.network.vpc_id
-  private_subnet_ids  = module.network.private_subnet_ids
-  public_subnet_ids   = module.network.public_subnet_ids
-  eks_control_sg_id   = module.network.eks_control_sg_id
-  eks_nodes_sg_id     = module.network.eks_nodes_sg_id
+  vpc_id              = module.vpc.vpc_id
+  private_subnet_ids  = module.vpc.private_subnet_ids
+  public_subnet_ids   = module.vpc.public_subnet_ids
+  eks_control_sg_id   = module.vpc.eks_control_sg_id
+  eks_nodes_sg_id     = module.vpc.eks_nodes_sg_id
   node_instance_types = var.node_instance_types
   node_desired_size   = var.node_desired_size
   node_min_size       = var.node_min_size
