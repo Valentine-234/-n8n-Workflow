@@ -1,3 +1,6 @@
+Name: Emmanuel Ibok 
+Email: ibokemmanuel17@gmail.com 
+
 # Laravel 10 Boilerplate
 
 The goal of this project is to serve as a boilerplate for Laravel 10
