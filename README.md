@@ -1,4 +1,31 @@
 # Laravel 10 Boilerplate - Production DevOps Implementation
+
+<!-- Project README Header -->
+
+<div align="center">
+  <h1>🚀 Production Ready Laravel Platform</h1>
+  <h3>Cloud Native Architecture • CI CD • Kubernetes Ready</h3>
+</div>
+
+<p align="center">
+  <em>
+    This repository demonstrates a modern DevOps driven approach to building,
+    testing, and deploying a scalable Laravel application using containerization,
+    infrastructure as code, and automated delivery pipelines.
+  </em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/CI-CD%20Enabled-brightgreen?style=flat-square" />
+  <img src="https://img.shields.io/badge/Docker-Containerized-blue?style=flat-square&logo=docker" />
+  <img src="https://img.shields.io/badge/Kubernetes-Ready-blue?style=flat-square&logo=kubernetes" />
+  <img src="https://img.shields.io/badge/Infrastructure-Terraform-purple?style=flat-square&logo=terraform" />
+</p>
+
+<hr />
+
+
+
 **Name:**  Emmanuel Michael Ibok
 **Email:** ibokemmanuel17@gmail.com
 
