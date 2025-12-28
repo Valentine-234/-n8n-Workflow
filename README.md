@@ -3,7 +3,6 @@
 <!-- Project README Header -->
 
 <div align="center">
-  <h1>🚀 Production Ready Laravel Platform</h1>
   <h3>Cloud Native Architecture • CI CD • Kubernetes Ready</h3>
 </div>
 
@@ -19,6 +18,7 @@
   <img src="https://img.shields.io/badge/CI-CD%20Enabled-brightgreen?style=flat-square" />
   <img src="https://img.shields.io/badge/Docker-Containerized-blue?style=flat-square&logo=docker" />
   <img src="https://img.shields.io/badge/Kubernetes-Ready-blue?style=flat-square&logo=kubernetes" />
+    <img src="https://img.shields.io/badge/Helm-Package%20Manager-0F1689?style=flat-square&logo=helm" />
   <img src="https://img.shields.io/badge/Infrastructure-Terraform-purple?style=flat-square&logo=terraform" />
 </p>
 
