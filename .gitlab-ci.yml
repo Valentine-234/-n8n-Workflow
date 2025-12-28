@@ -7,7 +7,7 @@ variables:
   DOCKER_REGISTRY: docker.io
   DOCKER_IMAGE: $DOCKER_USERNAME/laravel-10-boilerplate-task
   AWS_DEFAULT_REGION: us-east-1
-  EKS_CLUSTER_NAME: laravel-eks-cluster
+  EKS_CLUSTER_NAME: laravel-10-boilerplate-task-dev
 
 default:
   interruptible: true
