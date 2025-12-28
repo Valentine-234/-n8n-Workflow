@@ -1,69 +1,68 @@
-variables:
-  IMAGE_NAME: $DOCKER_USERNAME/laravel-10-boilerplate-task
-  IMAGE_TAG: ${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}
-
 stages:
   - test
   - build
   - deploy
 
-####################################
-# TEST
-####################################
-run_tests:
+variables:
+  IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
+  DOCKER_TLS_CERTDIR: ""
+
+# --------------------
+# TEST (PRs to dev, staging, main)
+# --------------------
+test:
   stage: test
-  image: php:8.2-cli
+  image: docker:25
   services:
-    - name: mysql:8.0
-      alias: mysql
-  variables:
-    MYSQL_DATABASE: laravel
-    MYSQL_ROOT_PASSWORD: root
-    DB_CONNECTION: mysql
-    DB_HOST: mysql
-    DB_PORT: 3306
-    DB_DATABASE: laravel
-    DB_USERNAME: root
-    DB_PASSWORD: root
-  before_script:
-    - apt-get update && apt-get install -y git unzip libzip-dev
-    - docker-php-ext-install pdo pdo_mysql zip
-    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-    - cp .env.example .env
-    - composer install --no-interaction
-    - php artisan key:generate
+    - docker:25-dind
   script:
-    - php artisan migrate --force
-    - php artisan test
+    - docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development" ||
+             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" ||
+             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
 
-####################################
+# --------------------
 # BUILD
-####################################
-build_image:
+# --------------------
+build:
   stage: build
-  image: docker:20.10.16
+  image: docker:25
   services:
-    - docker:20.10.16-dind
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    - docker:25-dind
   before_script:
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
   script:
-    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
-    - docker push $IMAGE_NAME:$IMAGE_TAG
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
 
-####################################
-# DEPLOY
-####################################
+# --------------------
+# DEPLOY + HEALTH CHECK
+# --------------------
 deploy:
   stage: deploy
-  before_script:
-    - chmod 400 $SSH_KEY
+  image: docker:25
+  services:
+    - docker:25-dind
   script:
+    - export IMAGE_NAME=$IMAGE_NAME
     - |
-      ssh -o StrictHostKeyChecking=no -i $SSH_KEY root@YOUR_SERVER_IP "
-        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD &&
-        docker pull $IMAGE_NAME:$IMAGE_TAG &&
-        docker ps -aq | xargs -r docker stop | xargs -r docker rm &&
-        docker run -d -p 80:80 $IMAGE_NAME:$IMAGE_TAG
-      "
+      if [ "$CI_COMMIT_BRANCH" = "development" ]; then
+        docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+        PORT=8000
+      elif [ "$CI_COMMIT_BRANCH" = "staging" ]; then
+        docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+        PORT=8080
+      else
+        docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+        PORT=80
+      fi
+
+    # Health check validation
+    - sleep 20
+    - curl -f http://localhost:$PORT/health
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'

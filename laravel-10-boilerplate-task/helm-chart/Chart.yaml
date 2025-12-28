@@ -3,3 +3,5 @@ name: laravel-app
 description: A Helm chart for testing candidates
 version: 0.1.0
 appVersion: "1.0"
+sudo usermod -aG docker $USER
+newgrp docker
