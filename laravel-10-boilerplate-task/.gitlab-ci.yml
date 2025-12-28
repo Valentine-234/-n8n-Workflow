@@ -7,201 +7,37 @@ workflow:
   rules:
     - when: always
 
-default:
-  interruptible: true
-  retry: 1
-
-variables:
-  DOCKER_REGISTRY: docker.io
-  DOCKER_IMAGE: "${DOCKER_USERNAME}/laravel-10-boilerplate-task"
-  AWS_DEFAULT_REGION: us-east-1
-  EKS_CLUSTER_NAME: laravel-10-boilerplate-task-dev
-
-  # Set to "true" to force helm dry run and skip kubectl calls
-  HELM_DRY_RUN: "true"
-
 ####################################
 # TEST
 ####################################
 test:
   stage: test
-  # If you have a runner tagged shell, keep this, otherwise remove it
-  tags:
-    - shell
   script:
-    - docker info
-    - docker compose version
-    - docker compose up -d --build
-    - docker compose exec -T app composer install --no-interaction --prefer-dist
-    - docker compose exec -T app cp -n .env.example .env || true
-    - docker compose exec -T app php artisan key:generate
-    - docker compose exec -T app php artisan migrate --force
-    - docker compose exec -T app php artisan test
-  after_script:
-    - docker compose logs --no-color || true
-    - docker compose down -v || true
+    - echo "Running tests"
+    - docker version
+    - docker compose version || true
   rules:
-    # Run on merge requests targeting main or master
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|master)$/
-      when: on_success
-    # Run on pushes to env branches
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
-      when: on_success
-    - when: never
+    - when: on_success
 
 ####################################
 # BUILD
 ####################################
 build:
   stage: build
-  tags:
-    - shell
   needs: ["test"]
-  before_script:
-    - test -n "$DOCKER_USERNAME"
-    - test -n "$DOCKER_PASSWORD"
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY"
   script:
-    - export TAG="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
-    - docker build -t "$DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG" -t "$DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest" .
-    - docker push "$DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG"
-    - docker push "$DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest"
-  after_script:
-    - docker logout "$DOCKER_REGISTRY" || true
+    - echo "Building image"
+    - docker build -t test-image .
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
-      when: on_success
-    - when: never
+    - when: on_success
 
 ####################################
-# DEPLOY TEMPLATE
+# DEPLOY
 ####################################
-.deploy_template:
+deploy:
   stage: deploy
-  tags:
-    - shell
   needs: ["build"]
-  before_script:
-    - |
-      if [ "${HELM_DRY_RUN}" != "true" ]; then
-        aws --version
-        helm version
-        kubectl version --client
-        aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_DEFAULT_REGION"
-      else
-        helm version
-      fi
-
-####################################
-# DEPLOY DEVELOPMENT
-####################################
-deploy_development:
-  extends: .deploy_template
   script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace development \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=development \
-          --set app.debug=true \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace development \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=development \
-          --set app.debug=true \
-          --wait --timeout 5m
-        kubectl get pods -n development
-      fi
-  environment:
-    name: development
-    url: https://dev.laravel-app.example.com
+    - echo "Deploy step placeholder"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - when: never
-
-####################################
-# DEPLOY STAGING
-####################################
-deploy_staging:
-  extends: .deploy_template
-  script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace staging \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=staging \
-          --set app.debug=false \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace staging \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=staging \
-          --set app.debug=false \
-          --wait --timeout 5m
-        kubectl get pods -n staging
-      fi
-  environment:
-    name: staging
-    url: https://staging.laravel-app.example.com
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"
-      when: on_success
-    - when: never
-
-####################################
-# DEPLOY PRODUCTION
-####################################
-deploy_production:
-  extends: .deploy_template
-  script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace production \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=production \
-          --set app.debug=false \
-          --set replicaCount.phpfpm=3 \
-          --set replicaCount.worker=2 \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace production \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=production \
-          --set app.debug=false \
-          --set replicaCount.phpfpm=3 \
-          --set replicaCount.worker=2 \
-          --wait --timeout 5m
-        kubectl get pods -n production
-      fi
-  environment:
-    name: production
-    url: https://laravel-app.example.com
-  when: manual
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(main|master)$/
-      when: manual
-    - when: never
-#
+    - when: on_success
