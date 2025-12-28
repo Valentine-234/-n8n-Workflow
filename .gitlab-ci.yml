@@ -3,7 +3,7 @@ stages:
   - init
   - plan
   - apply
-
+#
 image:
   name: hashicorp/terraform:1.10
   entrypoint: [""]
