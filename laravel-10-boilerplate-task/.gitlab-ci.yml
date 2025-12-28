@@ -1,207 +1,68 @@
-#
 stages:
   - test
   - build
   - deploy
 
-workflow:
-  rules:
-    - when: always
-
-default:
-  interruptible: true
-  retry: 1
-
 variables:
-  DOCKER_REGISTRY: docker.io
-  DOCKER_IMAGE: "${DOCKER_USERNAME}/laravel-10-boilerplate-task"
-  AWS_DEFAULT_REGION: us-east-1
-  EKS_CLUSTER_NAME: laravel-10-boilerplate-task-dev
+  IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
+  DOCKER_TLS_CERTDIR: ""
 
-  # Set to "true" to force helm dry run and skip kubectl calls
-  HELM_DRY_RUN: "true"
-
-####################################
-# TEST
-####################################
+# --------------------
+# TEST (PRs to dev, staging, main)
+# --------------------
 test:
   stage: test
-  # If you have a runner tagged shell, keep this, otherwise remove it
-  tags:
-    - shell
+  image: docker:25
+  services:
+    - docker:25-dind
   script:
-    - docker info
-    - docker compose version
-    - docker compose up -d --build
-    - docker compose exec -T app composer install --no-interaction --prefer-dist
-    - docker compose exec -T app cp -n .env.example .env || true
-    - docker compose exec -T app php artisan key:generate
-    - docker compose exec -T app php artisan migrate --force
-    - docker compose exec -T app php artisan test
-  after_script:
-    - docker compose logs --no-color || true
-    - docker compose down -v || true
+    - docker-compose -f docker-compose.test.yml up --abort-on-container-exit
   rules:
-    # Run on merge requests targeting main or master
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|master)$/
-      when: on_success
-    # Run on pushes to env branches
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
-      when: on_success
-    - when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development" ||
+             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" ||
+             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
 
-####################################
+# --------------------
 # BUILD
-####################################
+# --------------------
 build:
   stage: build
-  tags:
-    - shell
-  needs: ["test"]
+  image: docker:25
+  services:
+    - docker:25-dind
   before_script:
-    - test -n "$DOCKER_USERNAME"
-    - test -n "$DOCKER_PASSWORD"
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY"
+    - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
   script:
-    - export TAG="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
-    - docker build -t "$DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG" -t "$DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest" .
-    - docker push "$DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG"
-    - docker push "$DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest"
-  after_script:
-    - docker logout "$DOCKER_REGISTRY" || true
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
-      when: on_success
-    - when: never
+    - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
 
-####################################
-# DEPLOY TEMPLATE
-####################################
-.deploy_template:
+# --------------------
+# DEPLOY + HEALTH CHECK
+# --------------------
+deploy:
   stage: deploy
-  tags:
-    - shell
-  needs: ["build"]
-  before_script:
+  image: docker:25
+  services:
+    - docker:25-dind
+  script:
+    - export IMAGE_NAME=$IMAGE_NAME
     - |
-      if [ "${HELM_DRY_RUN}" != "true" ]; then
-        aws --version
-        helm version
-        kubectl version --client
-        aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_DEFAULT_REGION"
+      if [ "$CI_COMMIT_BRANCH" = "development" ]; then
+        docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+        PORT=8000
+      elif [ "$CI_COMMIT_BRANCH" = "staging" ]; then
+        docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+        PORT=8080
       else
-        helm version
+        docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+        PORT=80
       fi
 
-####################################
-# DEPLOY DEVELOPMENT
-####################################
-deploy_development:
-  extends: .deploy_template
-  script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace development \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=development \
-          --set app.debug=true \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace development \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=development \
-          --set app.debug=true \
-          --wait --timeout 5m
-        kubectl get pods -n development
-      fi
-  environment:
-    name: development
-    url: https://dev.laravel-app.example.com
+    # Health check validation
+    - sleep 20
+    - curl -f http://localhost:$PORT/health
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - when: never
-
-####################################
-# DEPLOY STAGING
-####################################
-deploy_staging:
-  extends: .deploy_template
-  script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace staging \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=staging \
-          --set app.debug=false \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace staging \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=staging \
-          --set app.debug=false \
-          --wait --timeout 5m
-        kubectl get pods -n staging
-      fi
-  environment:
-    name: staging
-    url: https://staging.laravel-app.example.com
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"
-      when: on_success
-    - when: never
-
-####################################
-# DEPLOY PRODUCTION
-####################################
-deploy_production:
-  extends: .deploy_template
-  script:
-    - |
-      set -e
-      if [ "${HELM_DRY_RUN}" = "true" ]; then
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace production \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=production \
-          --set app.debug=false \
-          --set replicaCount.phpfpm=3 \
-          --set replicaCount.worker=2 \
-          --dry-run --debug
-      else
-        helm upgrade --install laravel-app ./helm/laravel-app \
-          --namespace production \
-          --create-namespace \
-          --set image.repository="$DOCKER_REGISTRY/$DOCKER_IMAGE" \
-          --set image.tag="${CI_COMMIT_REF_SLUG}-latest" \
-          --set app.env=production \
-          --set app.debug=false \
-          --set replicaCount.phpfpm=3 \
-          --set replicaCount.worker=2 \
-          --wait --timeout 5m
-        kubectl get pods -n production
-      fi
-  environment:
-    name: production
-    url: https://laravel-app.example.com
-  when: manual
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(main|master)$/
-      when: manual
-    - when: never
+    - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
