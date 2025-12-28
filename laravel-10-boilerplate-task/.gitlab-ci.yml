@@ -4,8 +4,6 @@ stages:
   - deploy
 
 variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
   DOCKER_REGISTRY: docker.io
   DOCKER_IMAGE: $DOCKER_USERNAME/laravel-10-boilerplate-task
 
@@ -22,12 +20,8 @@ workflow:
 ####################################
 test:
   stage: test
-  image: docker:26
-  services:
-    - name: docker:26-dind
-      command: ["--tls=false"]
-  before_script:
-    - apk add --no-cache docker-cli-compose
+  tags:
+    - shell
   script:
     - docker info
     - docker compose version
@@ -49,10 +43,8 @@ test:
 ####################################
 build:
   stage: build
-  image: docker:26
-  services:
-    - name: docker:26-dind
-      command: ["--tls=false"]
+  tags:
+    - shell
   needs:
     - test
   before_script:
@@ -71,13 +63,12 @@ build:
 ####################################
 deploy_development:
   stage: deploy
-  image: alpine:3.19
+  tags:
+    - shell
   needs:
     - build
-  before_script:
-    - apk add --no-cache bash curl
   script:
-    - echo "Dry run deploy to development"
+    - echo "Simulating deploy to development"
     - echo "Image $DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest"
   environment:
     name: development
@@ -90,13 +81,12 @@ deploy_development:
 ####################################
 deploy_staging:
   stage: deploy
-  image: alpine:3.19
+  tags:
+    - shell
   needs:
     - build
-  before_script:
-    - apk add --no-cache bash curl
   script:
-    - echo "Dry run deploy to staging"
+    - echo "Simulating deploy to staging"
     - echo "Image $DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest"
   environment:
     name: staging
@@ -109,13 +99,12 @@ deploy_staging:
 ####################################
 deploy_production:
   stage: deploy
-  image: alpine:3.19
+  tags:
+    - shell
   needs:
     - build
-  before_script:
-    - apk add --no-cache bash curl
   script:
-    - echo "Dry run deploy to production"
+    - echo "Simulating deploy to production"
     - echo "Image $DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest"
   environment:
     name: production
