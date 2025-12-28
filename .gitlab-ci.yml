@@ -1,4 +1,3 @@
-#
 stages:
   - test
   - build
@@ -60,7 +59,7 @@ build:
       when: on_success
 
 ####################################
-# DEPLOY DEV
+# DEPLOY DEVELOPMENT
 ####################################
 deploy_development:
   stage: deploy
@@ -96,7 +95,7 @@ deploy_staging:
       when: on_success
 
 ####################################
-# DEPLOY PROD
+# DEPLOY PRODUCTION
 ####################################
 deploy_production:
   stage: deploy
