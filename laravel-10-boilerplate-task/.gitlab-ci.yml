@@ -1,0 +1,154 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: $DOCKER_USERNAME/laravel-10-boilerplate-task
+  AWS_DEFAULT_REGION: us-east-1
+  EKS_CLUSTER_NAME: laravel-eks-cluster
+
+default:
+  interruptible: true
+  retry: 1
+
+workflow:
+  rules:
+    - when: always
+
+####################################
+# TEST
+####################################
+test:
+  stage: test
+  tags:
+    - shell
+  script:
+    - docker info
+    - docker compose version
+    - docker compose up -d --build
+    - docker compose exec -T app composer install --no-interaction --prefer-dist
+    - docker compose exec -T app cp -n .env.example .env || true
+    - docker compose exec -T app php artisan key:generate
+    - docker compose exec -T app php artisan migrate --force
+    - docker compose exec -T app php artisan test
+  after_script:
+    - docker compose logs --no-color || true
+    - docker compose down -v || true
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
+      when: on_success
+
+####################################
+# BUILD
+####################################
+build:
+  stage: build
+  tags:
+    - shell
+  needs:
+    - test
+  before_script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin $DOCKER_REGISTRY
+  script:
+    - export TAG="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
+    - docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest .
+    - docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$TAG
+    - docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:${CI_COMMIT_REF_SLUG}-latest
+  after_script:
+    - docker logout $DOCKER_REGISTRY
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(development|staging|main|master)$/
+      when: on_success
+
+####################################
+# DEPLOY DEVELOPMENT
+####################################
+deploy_development:
+  stage: deploy
+  tags:
+    - shell
+  needs:
+    - build
+  before_script:
+    - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+  script:
+    - |
+      helm upgrade --install laravel-app ./helm/laravel-app \
+        --namespace development \
+        --create-namespace \
+        --set image.repository=$DOCKER_REGISTRY/$DOCKER_IMAGE \
+        --set image.tag=${CI_COMMIT_REF_SLUG}-latest \
+        --set app.env=development \
+        --set app.debug=true \
+        --wait --timeout 5m
+    - kubectl get pods -n development
+  environment:
+    name: development
+    url: https://dev.laravel-app.example.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development"
+      when: on_success
+
+####################################
+# DEPLOY STAGING
+####################################
+deploy_staging:
+  stage: deploy
+  tags:
+    - shell
+  needs:
+    - build
+  before_script:
+    - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+  script:
+    - |
+      helm upgrade --install laravel-app ./helm/laravel-app \
+        --namespace staging \
+        --create-namespace \
+        --set image.repository=$DOCKER_REGISTRY/$DOCKER_IMAGE \
+        --set image.tag=${CI_COMMIT_REF_SLUG}-latest \
+        --set app.env=staging \
+        --set app.debug=false \
+        --wait --timeout 5m
+    - kubectl get pods -n staging
+  environment:
+    name: staging
+    url: https://staging.laravel-app.example.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+      when: on_success
+
+####################################
+# DEPLOY PRODUCTION
+####################################
+deploy_production:
+  stage: deploy
+  tags:
+    - shell
+  needs:
+    - build
+  before_script:
+    - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+  script:
+    - |
+      helm upgrade --install laravel-app ./helm/laravel-app \
+        --namespace production \
+        --create-namespace \
+        --set image.repository=$DOCKER_REGISTRY/$DOCKER_IMAGE \
+        --set image.tag=${CI_COMMIT_REF_SLUG}-latest \
+        --set app.env=production \
+        --set app.debug=false \
+        --set replicaCount.phpfpm=3 \
+        --set replicaCount.worker=2 \
+        --wait --timeout 5m
+    - kubectl get pods -n production
+  environment:
+    name: production
+    url: https://laravel-app.example.com
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(main|master)$/
+      when: manual
+      
