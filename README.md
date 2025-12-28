@@ -83,7 +83,7 @@ git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
 cd laravel-10-boilerplate-task
 
 The goal of this project is to serve as a boilerplate for Laravel 10
-utilizing light-weight alpine linux images for nginx and php 8.2 (fpm).
+utilizing light-weight alpine linux images for nginx and php 8.2 (fpm)
 
 
 
