@@ -1,38 +1,43 @@
 FROM php:8.2-fpm-alpine
 
-RUN apk --update add wget \
-  curl \
-  git \
-  grep\
-  build-base \
-  libmemcached-dev \
-  libmcrypt-dev \
-  libxml2-dev \
-  imagemagick-dev \
-  pcre-dev \
-  libtool \
-  make \
-  autoconf \
-  g++ \
-  cyrus-sasl-dev \
-  libgsasl-dev \
-  supervisr
+# System dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    grep \
+    build-base \
+    libpng-dev \
+    libxml2-dev \
+    oniguruma-dev \
+    libmemcached-dev \
+    imagemagick-dev \
+    supervisor
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+# PHP extensions
+RUN docker-php-ext-install \
+    pdo \
+    pdo_mysql \
+    mysqli \
+    mbstring \
+    xml
 
-RUN docker-php-ext-install mysqli pdo pdo_mysql xml
+# PECL extensions
 RUN pecl channel-update pecl.php.net \
-    && pecl install memcached \
-    && pecl install imagick \
-    && docker-php-ext-enable memcached
-    && docker-php-ext-enable imagick
+    && pecl install memcached imagick \
+    && docker-php-ext-enable memcached imagick
 
-RUN rm /var/cache/apk/*
+# Composer
+RUN curl -sS https://getcomposer.org/installer | php -- \
+    --install-dir=/usr/local/bin \
+    --filename=composer
 
 WORKDIR /var/www
-# COPY . /var/www
-# RUN composer i
 
+COPY . /var/www
+
+# Supervisor config
 COPY ./dev/docker-compose/php/supervisord-app.conf /etc/supervisord.conf
+
+EXPOSE 9000
 
 ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
