@@ -3,6 +3,10 @@
 **Email:** ibokemmanuel17@gmail.com
 
 
+## Architecture Diagram
+
+![Architecture Diagram](docs/diagram-export-12-28-2025-4_43_06-PM.png)
+
 ## Table of Contents
 
 - [Overview](#overview)
