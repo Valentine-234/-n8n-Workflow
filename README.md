@@ -1,7 +1,87 @@
-# Laravel 10 Boilerplate
+# Laravel 10 Boilerplate - Production DevOps Implementation
+**Name:**  Emmanuel Michael Ibok
+**Email:** ibokemmanuel17@gmail.com
+
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Project Architecture](#project-architecture)
+- [Prerequisites](#prerequisites)
+- [Local Development Setup](#local-development-setup)
+- [Terraform Infrastructure](#terraform-infrastructure)
+- [Helm Chart Deployment](#helm-chart-deployment)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Docker Configuration](#docker-configuration)
+- [Security Considerations](#security-considerations)
+- [Troubleshooting](#troubleshooting)
+
+## Overview
+
+This project implements a production ready DevOps pipeline for a Laravel 10 application.
+
+Key capabilities include:
+
+- Infrastructure as Code using Terraform
+- AWS EKS Kubernetes cluster
+- Multi stage Docker builds
+- Helm based Kubernetes deployments
+- GitLab CI CD with gated production releases
+- Development, Staging, and Production environments
+- Separate PHP FPM and Queue Worker deployments
+
+---
+
+## Project Architecture
+
+### Infrastructure Overview
+
+AWS VPC with public and private subnets across three availability zones.  
+EKS nodes run only in private subnets.  
+Docker images are stored in dockerhub registry.
+
+### Kubernetes Application Layout
+
+- Ingress with TLS termination
+- ClusterIP service
+- PHP FPM deployment with horizontal scaling
+- Queue worker deployment with independent scaling
+- ConfigMaps for configuration
+- Secrets for sensitive values
+
+---
+
+## Prerequisites
+
+### Required Tools
+
+- AWS CLI v2
+- Terraform v1.x
+- Docker v20+
+- kubectl v1.28+
+- Helm v3
+- Git
+
+### Accounts and Access
+
+- AWS account with EKS, VPC, IAM permissions
+- GitLab account
+- GitLab Runner configured for the project
+
+---
+
+## Local Development Setup
+
+### Clone Repository
+
+```bash
+git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
+cd laravel-10-boilerplate-task
 
 The goal of this project is to serve as a boilerplate for Laravel 10
 utilizing light-weight alpine linux images for nginx and php 8.2 (fpm).
+
+
 
 Stack:
 
