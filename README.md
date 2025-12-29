@@ -322,6 +322,77 @@ Manual Helm deployments should only be used for troubleshooting.
 This Helm chart is designed to be reusable across development, staging, and production environments.
 
 
+## CI/CD Workflow Overview
+
+### Pipeline Stages
+
+The CI/CD pipeline is designed to ensure code quality, build consistency, and safe deployments across all environments.
+
+#### Test
+
+The test stage validates the application before any build or deployment occurs.
+
+- Runs automated tests on merge requests
+- Verifies application startup and database migrations
+- Acts as a mandatory quality gate
+
+All tests must pass before changes can be merged.
+
+---
+
+#### Build
+
+The build stage creates a deployable application artifact.
+
+- Builds the Docker image for the Laravel application
+- Tags the image using the commit SHA or version
+- Pushes the image to the configured container registry
+
+No deployment actions are performed during this stage.
+
+---
+
+#### Deploy
+
+The deploy stage releases the application to Kubernetes using Helm.
+
+- Executes Helm upgrade or install commands
+- Deploys the application to the target Kubernetes cluster
+- Performs rolling updates and rollout verification
+
+Infrastructure resources are not modified in this stage.
+
+---
+
+### Environment Integration
+
+The pipeline integrates with environment-specific Git branches.
+
+| Branch       | Environment  | Pipeline Actions |
+|-------------|--------------|------------------|
+| development | Development  | Build, Deploy    |
+| staging     | Staging      | Build, Deploy    |
+| main        | Production   | Build, Deploy    |
+
+---
+
+### Deployment Flow
+
+Merge Request → Test
+Merge to development → Build → Deploy to Development
+Merge to staging → Build → Deploy to Staging
+Merge to main → Build → Deploy to Production
+
+
+---
+
+### Notes
+
+- Each environment is isolated and deployed independently
+- Environment promotion is handled through Git branch merges
+- Pipeline failures prevent progression to the next stage
+
+
 ## Local Development Setup
 
 ### Clone Repository
