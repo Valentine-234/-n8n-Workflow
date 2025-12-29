@@ -377,18 +377,72 @@ The pipeline integrates with environment-specific Git branches.
 ---
 ### Deployment Flow
 
-```bash
+
 Merge Request → Test
 Merge to development → Build → Deploy to Development
 Merge to staging → Build → Deploy to Staging
 Merge to main → Build → Deploy to Production
----
+
 
 ### Notes
 
 - Each environment is isolated and deployed independently
 - Environment promotion is handled through Git branch merges
 - Pipeline failures prevent progression to the next stage
+
+
+## Running the Project
+
+This project follows cloud native best practices and supports both local development and Kubernetes based deployments using GitOps with Argo CD.
+
+---
+
+## Prerequisites
+
+Before running the project, ensure the following tools are installed:
+
+- Docker and Docker Compose
+- AWS CLI configured with valid credentials
+- kubectl
+- Helm
+- Terraform
+- Argo CD CLI
+
+---
+
+## Local Development
+
+Local development uses Docker Compose to closely mirror the production runtime.
+
+### Start the Application Locally
+
+```bash
+docker compose up -d --build
+
+
+## Application Setup
+
+After starting the containers, run the following commands to complete the application setup:
+
+```bash
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+
+
+
+## Infrastructure Provisioning with Terraform
+
+Terraform is used to provision AWS infrastructure including VPC, EKS, RDS, and supporting resources.
+
+### Initialize Terraform
+
+```bash
+cd environments/dev
+terraform init
+terraform plan
+terraform apply
+
 
 
 ## Local Development Setup
