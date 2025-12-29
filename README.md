@@ -173,6 +173,153 @@ helm-chart/laravel-app/
 ├── hpa-phpfpm.yaml
 └── hpa-worker.yaml
 
+
+---
+
+### Chart Components
+
+#### Chart.yaml
+
+Defines Helm chart metadata such as:
+- Chart name
+- Version
+- Application version
+- Description
+
+This file must be updated whenever the chart is versioned.
+
+---
+
+#### values.yaml
+
+Holds all configurable values for the chart, including:
+- Image repository and tag
+- Resource requests and limits
+- Environment variables
+- Ingress configuration
+- Autoscaling parameters
+
+Environment specific overrides should be provided at deployment time rather than modifying templates directly.
+
+---
+
+### Templates Breakdown
+
+#### _helpers.tpl
+
+Contains reusable Helm template helpers such as:
+- Naming conventions
+- Labels and selectors
+- Common annotations
+
+This file helps keep templates consistent and DRY.
+
+---
+
+#### configmap.yaml
+
+Defines non sensitive application configuration, including:
+- Application environment variables
+- Feature flags
+- Runtime configuration
+
+Values are sourced from `values.yaml`.
+
+---
+
+#### secret.yaml
+
+Manages sensitive configuration such as:
+- Database credentials
+- Application secrets
+- API keys
+
+Secrets should be injected securely via CI/CD and never hardcoded.
+
+---
+
+#### deployment-phpfpm.yaml
+
+Defines the main Laravel PHP FPM deployment:
+- Application container
+- Resource limits
+- Health probes
+- ConfigMap and Secret injection
+
+This deployment serves web traffic through the service and ingress.
+
+---
+
+#### deployment-worker.yaml
+
+Defines a separate deployment for background workers:
+- Executes `php artisan queue:work`
+- Scales independently from the web application
+- Shares configuration with PHP FPM where applicable
+
+This separation allows independent scaling and fault isolation.
+
+---
+
+#### hpa-phpfpm.yaml
+
+Configures Horizontal Pod Autoscaling for the PHP FPM deployment:
+- CPU or memory based scaling
+- Minimum and maximum replicas
+
+---
+
+#### hpa-worker.yaml
+
+Configures autoscaling for queue workers:
+- Scales based on resource usage
+- Prevents worker overload during traffic spikes
+
+---
+
+#### service.yaml
+
+Exposes the PHP FPM deployment internally within the cluster:
+- Defines service type
+- Maps ports for ingress routing
+
+---
+
+#### ingress.yaml
+
+Manages external access to the application:
+- Host based routing
+- TLS configuration
+- Ingress annotations
+
+Ingress behavior is controlled through `values.yaml`.
+
+---
+
+## Helm Deployment Workflow
+
+Typical deployment flow:
+
+1. CI/CD pipeline updates image tag in Helm values
+2. Helm upgrade is executed against the target cluster
+3. Kubernetes performs rolling updates
+4. Health checks ensure zero downtime deployment
+
+Manual Helm deployments should only be used for troubleshooting.
+
+---
+
+## Design Principles
+
+- Separate deployments for web and workers
+- Configuration driven via values.yaml
+- Secure handling of secrets
+- Autoscaling enabled by default
+- Minimal logic inside templates
+
+This Helm chart is designed to be reusable across development, staging, and production environments.
+
+
 ## Local Development Setup
 
 ### Clone Repository
