@@ -13,7 +13,7 @@ variables:
   IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
 
 # --------------------
-# TEST (MRs only)
+## TEST (MRs only)
 # --------------------
 test:
   stage: test
