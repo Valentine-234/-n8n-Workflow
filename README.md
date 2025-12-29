@@ -469,6 +469,17 @@ RUN addgroup -g 1001 appgroup \
 
 USER appuser
 
+Scan Images for Vulnerabilities
+
+Scan container images before deployment using tools such as:
+
+Trivy
+
+Snyk
+
+Docker Scout
+
+This helps identify known CVEs early.
 
 
 
