@@ -104,7 +104,7 @@ Docker images are stored in dockerhub registry.
 ## Terraform Modules Usage
 
 ### Project Structure
-
+```bash
 laravel-10-boilerplate-infra-task/
 ├── environments/
 │ ├── dev/
@@ -115,7 +115,7 @@ laravel-10-boilerplate-infra-task/
 ├── security-group/
 ├── eks/
 └── rds/
-
+```
 
 ### Modules Design
 
@@ -158,7 +158,7 @@ The Helm chart located under `helm-chart/laravel-app` is responsible for deployi
 It follows standard Helm best practices and separates concerns between application runtime, configuration, scaling, and networking.
 
 ### Directory Structure
-
+```bash
 helm-chart/laravel-app/
 ├── Chart.yaml
 ├── values.yaml
@@ -172,6 +172,8 @@ helm-chart/laravel-app/
 ├── deployment-worker.yaml
 ├── hpa-phpfpm.yaml
 └── hpa-worker.yaml
+```
+
 
 
 ---
