@@ -375,15 +375,12 @@ The pipeline integrates with environment-specific Git branches.
 | main        | Production   | Build, Deploy    |
 
 ---
-
 ### Deployment Flow
 
 Merge Request → Test
 Merge to development → Build → Deploy to Development
 Merge to staging → Build → Deploy to Staging
 Merge to main → Build → Deploy to Production
-
-
 ---
 
 ### Notes
