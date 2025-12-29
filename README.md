@@ -370,13 +370,13 @@ The pipeline integrates with environment-specific Git branches.
 
 | Branch       | Environment  | Pipeline Actions |
 |-------------|--------------|------------------|
-| development | Development  | Build, Deploy    |
-| staging     | Staging      | Build, Deploy    |
-| main        | Production   | Build, Deploy    |
+| development | Development  | Test,Build, Deploy    |
+| staging     | Staging      | Test,Build, Deploy    |
+| main        | Production   | Test,Build, Deploy    |
 
 ---
 ### Deployment Flow
-
+```bash
 Merge Request → Test
 Merge to development → Build → Deploy to Development
 Merge to staging → Build → Deploy to Staging
@@ -397,6 +397,7 @@ Merge to main → Build → Deploy to Production
 ```bash
 git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
 cd laravel-10-boilerplate-task
+```
 
 The goal of this project is to serve as a boilerplate for Laravel 10
 utilizing light-weight alpine linux images for nginx and php 8.2 (fpm)
