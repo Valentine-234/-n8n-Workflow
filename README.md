@@ -101,6 +101,78 @@ Docker images are stored in dockerhub registry.
 
 ---
 
+## Terraform Modules Usage
+
+### Project Structure
+
+laravel-10-boilerplate-infra-task/
+├── environments/
+│ ├── dev/
+│ ├── staging/
+│ └── production/
+└── modules/
+├── vpc/
+├── security-group/
+├── eks/
+└── rds/
+
+
+### Modules Design
+
+Terraform modules are located under the `modules/` directory and are designed to be reusable across environments.
+
+- **vpc**  
+  Creates networking components including VPC, subnets, route tables, and gateways.
+
+- **security-group**  
+  Manages security groups and ingress egress rules.
+
+- **eks**  
+  Provisions the Kubernetes cluster, node groups, IAM roles, and required addons.
+
+- **rds**  
+  Creates and manages the relational database instance and related networking resources.
+
+Modules are environment independent and receive configuration through input variables.
+
+### Environment Configuration
+
+Each environment (`dev`, `staging`, `production`) contains its own Terraform configuration:
+
+- `main.tf` for module instantiation
+- `variables.tf` for variable definitions
+- `terraform.tfvars` for environment specific values
+- `providers.tf` and `versions.tf` for provider configuration
+- `outputs.tf` for exported outputs
+
+Each environment maintains an isolated Terraform state and can be deployed independently.
+
+---
+
+## Helm Chart Structure and Usage
+
+### Helm Chart Overview
+
+The Helm chart located under `helm-chart/laravel-app` is responsible for deploying the Laravel application to Kubernetes in a production ready manner.
+
+It follows standard Helm best practices and separates concerns between application runtime, configuration, scaling, and networking.
+
+### Directory Structure
+
+helm-chart/laravel-app/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+├── _helpers.tpl
+├── configmap.yaml
+├── secret.yaml
+├── service.yaml
+├── ingress.yaml
+├── deployment-phpfpm.yaml
+├── deployment-worker.yaml
+├── hpa-phpfpm.yaml
+└── hpa-worker.yaml
+
 ## Local Development Setup
 
 ### Clone Repository
