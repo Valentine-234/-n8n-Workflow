@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "laravel-app.fullname" . }}
+  labels:
+    {{- include "laravel-app.labels" . | nindent 4 }}
+  annotations:
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/fastcgi-params-configmap: {{ include "laravel-app.fullname" . }}-fastcgi-params
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | quote }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "laravel-app.fullname" $ }}-phpfpm
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

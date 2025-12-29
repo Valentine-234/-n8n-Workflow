@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "laravel-app.fullname" . }}-worker
+  labels:
+    {{- include "laravel-app.labels" . | nindent 4 }}
+    component: worker
+spec:
+  replicas: {{ .Values.replicaCount.worker }}
+  selector:
+    matchLabels:
+      {{- include "laravel-app.selectorLabels" . | nindent 6 }}
+      component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "laravel-app.selectorLabels" . | nindent 8 }}
+        component: worker
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["php"]
+          args: ["artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=120"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "laravel-app.fullname" . }}-app-config
+            - secretRef:
+                name: {{ include "laravel-app.fullname" . }}-app-secret
+          resources:
+            {{- toYaml .Values.resources.worker | nindent 12 }}

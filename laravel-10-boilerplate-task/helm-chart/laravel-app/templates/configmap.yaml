@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "laravel-app.fullname" . }}-app-config
+  labels:
+    {{- include "laravel-app.labels" . | nindent 4 }}
+data:
+  {{- range $k, $v := .Values.config }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "laravel-app.fullname" . }}-fastcgi-params
+  labels:
+    {{- include "laravel-app.labels" . | nindent 4 }}
+data:
+  SCRIPT_FILENAME: "/var/www/html/public/index.php"
+  DOCUMENT_ROOT: "/var/www/html/public"
+  SCRIPT_NAME: "/index.php"
+  REQUEST_URI: "$request_uri"

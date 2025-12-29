@@ -1,0 +1,93 @@
+replicaCount:
+  phpfpm: 2
+  worker: 1
+
+image:
+  repository: your-dockerhub-or-ecr-repo/laravel-app
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 9000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "FCGI"
+    nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
+    nginx.ingress.kubernetes.io/fastcgi-params-configmap: "RELEASE-NAME-fastcgi-params"
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # tls:
+  #   - secretName: laravel-tls
+  #     hosts:
+  #       - app.example.com
+
+resources:
+  phpfpm:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  worker:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+autoscaling:
+  phpfpm:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  worker:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+config:
+  APP_ENV: production
+  APP_DEBUG: "false"
+  LOG_CHANNEL: stderr
+  CACHE_DRIVER: redis
+  QUEUE_CONNECTION: redis
+  SESSION_DRIVER: redis
+  REDIS_HOST: redis-master.default.svc.cluster.local
+  REDIS_PORT: "6379"
+
+secret:
+  APP_KEY: ""
+  DB_CONNECTION: mysql
+  DB_HOST: ""
+  DB_PORT: "3306"
+  DB_DATABASE: ""
+  DB_USERNAME: ""
+  DB_PASSWORD: ""

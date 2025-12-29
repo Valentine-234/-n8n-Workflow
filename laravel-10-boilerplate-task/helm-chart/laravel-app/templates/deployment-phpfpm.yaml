@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "laravel-app.fullname" . }}-phpfpm
+  labels:
+    {{- include "laravel-app.labels" . | nindent 4 }}
+    component: phpfpm
+spec:
+  replicas: {{ .Values.replicaCount.phpfpm }}
+  selector:
+    matchLabels:
+      {{- include "laravel-app.selectorLabels" . | nindent 6 }}
+      component: phpfpm
+  template:
+    metadata:
+      labels:
+        {{- include "laravel-app.selectorLabels" . | nindent 8 }}
+        component: phpfpm
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: phpfpm
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: fpm
+              containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: {{ include "laravel-app.fullname" . }}-app-config
+            - secretRef:
+                name: {{ include "laravel-app.fullname" . }}-app-secret
+          readinessProbe:
+            tcpSocket:
+              port: fpm
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: fpm
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources.phpfpm | nindent 12 }}
