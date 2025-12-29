@@ -13,7 +13,7 @@ variables:
   IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
 
 # --------------------
-## TEST (MRs only)
+# TEST (Merge Requests to dev or main)
 # --------------------
 test:
   stage: test
@@ -25,10 +25,11 @@ test:
     - docker version
     - docker compose -f docker-compose.test.yml up --abort-on-container-exit
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(dev|main)$/'
 
 # --------------------
-# BUILD
+# BUILD (Push to dev or main)
 # --------------------
 build:
   stage: build
@@ -42,10 +43,11 @@ build:
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
+    - if: '$CI_PIPELINE_SOURCE == "push" &&
+            $CI_COMMIT_BRANCH =~ /^(dev|main)$/'
 
 # --------------------
-# DEPLOY
+# DEPLOY (Push to dev or main)
 # --------------------
 deploy:
   stage: deploy
@@ -55,17 +57,15 @@ deploy:
       command: ["--tls=false"]
   script:
     - |
-      if [ "$CI_COMMIT_BRANCH" = "development" ]; then
+      if [ "$CI_COMMIT_BRANCH" = "dev" ]; then
         docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
         PORT=8000
-      elif [ "$CI_COMMIT_BRANCH" = "staging" ]; then
-        docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
-        PORT=8080
-      else
+      elif [ "$CI_COMMIT_BRANCH" = "main" ]; then
         docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
         PORT=80
       fi
     - sleep 20
     - curl -f http://localhost:$PORT/health
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
+    - if: '$CI_PIPELINE_SOURCE == "push" &&
+            $CI_COMMIT_BRANCH =~ /^(dev|main)$/'
