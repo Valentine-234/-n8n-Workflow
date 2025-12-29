@@ -10,7 +10,7 @@ workflow:
 variables:
   DOCKER_TLS_CERTDIR: ""
   DOCKER_HOST: tcp://docker:2375
-  IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
+  IMAGE_NAME: "$DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA"
 
 # --------------------
 # TEST (Merge Requests to dev or main)
@@ -37,11 +37,29 @@ build:
   services:
     - name: docker:25-dind
       command: ["--tls=false"]
+
   before_script:
-    - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    # ---- HARD FAIL WITH CLEAR ERROR ----
+    - |
+      if [ -z "$DOCKERHUB_USERNAME" ]; then
+        echo "ERROR: DOCKERHUB_USERNAME is not set in GitLab CI variables"
+        exit 1
+      fi
+
+      if [ -z "$DOCKERHUB_PASSWORD" ]; then
+        echo "ERROR: DOCKERHUB_PASSWORD is not set in GitLab CI variables"
+        exit 1
+      fi
+
+    # ---- SAFE DOCKER LOGIN ----
+    - echo "$DOCKERHUB_PASSWORD" | docker login \
+        --username "$DOCKERHUB_USERNAME" \
+        --password-stdin
+
   script:
-    - docker build -t $IMAGE_NAME .
-    - docker push $IMAGE_NAME
+    - docker build -t "$IMAGE_NAME" .
+    - docker push "$IMAGE_NAME"
+
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" &&
             $CI_COMMIT_BRANCH =~ /^(dev|main)$/'
@@ -55,6 +73,7 @@ deploy:
   services:
     - name: docker:25-dind
       command: ["--tls=false"]
+
   script:
     - |
       if [ "$CI_COMMIT_BRANCH" = "dev" ]; then
@@ -63,10 +82,14 @@ deploy:
       elif [ "$CI_COMMIT_BRANCH" = "main" ]; then
         docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
         PORT=80
+      else
+        echo "Unsupported branch: $CI_COMMIT_BRANCH"
+        exit 1
       fi
+
     - sleep 20
-    - curl -f http://localhost:$PORT/health
+    - curl -f "http://localhost:$PORT/health"
+
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" &&
             $CI_COMMIT_BRANCH =~ /^(dev|main)$/'
-            
