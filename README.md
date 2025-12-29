@@ -444,6 +444,32 @@ terraform plan
 terraform apply
 ```
 
+## Improving Dockerfile Security
+
+The following practices are recommended to improve Dockerfile security and reduce the container attack surface.
+
+### Use Minimal Base Images
+
+Start from minimal images such as distroless, Alpine, or slim variants instead of full OS images.
+
+Example:
+- Prefer `python:3.11-slim` over `python:3.11`
+
+This reduces image size and limits exposed packages.
+
+---
+
+### Run as a Non Root User
+
+Containers should not run as root.
+
+```dockerfile
+RUN addgroup -g 1001 appgroup \
+    && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+
+USER appuser
+
+
 
 
 ## Local Development Setup
