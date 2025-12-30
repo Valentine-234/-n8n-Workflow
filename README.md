@@ -353,3 +353,65 @@ The CI/CD workflow integrates with multiple environments using branch based depl
 - Helm dry run can be used in CI to validate Kubernetes manifests without requiring a live cluster
 
 This workflow ensures consistent, repeatable, and safe deployments across all environments.
+
+
+## Required Commands to Run the Project
+
+This section outlines the common commands required to run, test, and deploy the project across local and infrastructure environments.
+
+---
+
+## Local Development
+
+Clone the repository and move into the project directory:
+
+```bash
+git clone <repository-url>
+cd <repository-name>
+```
+
+## Local Development Setup
+
+Copy the environment configuration file:
+
+```bash
+cp .env.example .env
+```
+
+Start the local development environment using Docker Compose:
+```bash
+docker-compose up -d
+```
+
+Install dependencies and prepare the application:
+```bash
+docker-compose exec app composer install
+docker-compose exec app php artisan key:generate
+docker-compose exec app php artisan migrate
+```
+
+Run application tests locally:
+```bash
+docker-compose exec app php artisan test
+```
+
+Stop the local development environment:
+```bash
+docker-compose down
+```
+
+## Infrastructure Deployment with Terraform
+
+Navigate to the desired environment directory:
+```bash
+cd laravel-10-boilerplate-infra-task/environments/dev
+```
+
+Initialize Terraform and deploy infrastructure:
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+Repeat the same process for the staging or production environment directories as needed.
