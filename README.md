@@ -445,3 +445,138 @@ helm upgrade --install laravel-10-boilerplate-task ./helm-chart/laravel-app \
 - Production deployments require manual approval
 
 Helm dry run is used in CI environments when a live Kubernetes cluster is not available
+
+
+## Local Development Setup
+
+This project supports local development using Docker and Docker Compose.
+All application services including PHP FPM, Nginx, MySQL, Redis, and background workers are orchestrated via `docker-compose.yml`.
+
+### Prerequisites
+
+Ensure the following tools are installed on your machine:
+
+- Docker
+
+- Docker Compose v2
+
+- Git
+
+Verify installation:
+```bash
+docker --version
+docker compose version
+```
+
+## Environment Configuration
+
+Copy the example environment file and update values as needed:
+
+```bash
+cp .env.example .env
+```
+
+## Minimum Required Values for Local Development
+```bash
+APP_ENV=local
+APP_DEBUG=true
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=laravel
+DB_PASSWORD=secret
+
+MYSQL_ROOT_PASSWORD=secret
+
+REDIS_HOST=redis
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+```
+## Start Local Services
+
+Build and start all required services:
+```bash 
+docker compose up -d --build
+```
+
+
+## This will start the following containers:
+```bash 
+ap-app
+Laravel application running PHP FPM
+
+ap-nginx
+Nginx web server
+
+ap-mysql
+MySQL database
+
+ap-redis
+Redis cache and queue backend
+
+ap-worker-local
+Laravel queue workers
+```
+## Verify running containers:
+```bash
+docker ps
+```
+## Application Setup
+
+Run the following commands inside the application container:
+
+```bash
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+## Optional Seed Data
+```bash
+docker compose exec app php artisan db:seed
+```
+
+## Access the Application
+
+Application URL:
+```bash
+http://localhost:8022
+```
+
+## Service ports:
+
+- MySQL exposed port: 3306
+
+- Redis exposed port: 6379
+
+- Ports can be adjusted using values in the .env file.
+
+## Running Tests Locally
+
+Execute the test suite inside the container:
+
+- docker compose exec app php artisan test
+
+- Stopping the Environment
+
+## Stop all services:
+```bash
+docker compose down
+```
+
+## Remove containers, networks, and volumes for a clean reset:
+```bash
+docker compose down -v
+```
+## Notes on docker-compose.yml
+
+- The docker-compose.yml file is intended for local development only
+
+- MySQL requires MYSQL_ROOT_PASSWORD to be set
+
+- Redis uses a custom configuration for performance tuning
+
+- PHP runs under Supervisor for process management
+
+- Nginx proxies HTTP requests to PHP FPM
