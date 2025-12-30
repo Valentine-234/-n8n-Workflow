@@ -145,7 +145,6 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 │       └── rds/
 │
 └── README.md
----
 
 ## Helm Chart Structure
 
