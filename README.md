@@ -146,101 +146,115 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 │
 └── README.md
 
+## Helm Chart Structure
 
-## How Terraform Modules Are Used
+The Helm chart is located in `helm-chart/laravel-app` and is responsible for deploying the Laravel application to Kubernetes in a production ready manner.
 
-Terraform is structured using modules to promote reusability, clarity, and separation of concerns.
+### Chart.yaml
 
-### VPC Module
-
-The VPC module is responsible for creating the networking layer.
-
-It provisions:
-- A Virtual Private Cloud
-- Public subnets across multiple availability zones
-- Private subnets across multiple availability zones
-- Route tables and associations
-- An Internet Gateway
-- NAT Gateways for outbound access from private subnets
-
-This design ensures that the Amazon EKS cluster and worker nodes run only in private subnets while still having controlled internet access.
+Defines the Helm chart metadata such as:
+- Chart name
+- Version
+- Description
 
 ---
 
-### EKS Module
+### values.yaml
 
-The EKS module provisions the Kubernetes control plane and worker infrastructure.
-
-It is responsible for:
-- Creating the Amazon EKS cluster
-- Provisioning managed node groups
-- Configuring IAM roles for the cluster and nodes
-- Defining security groups and networking rules
-- Setting the Kubernetes version
-- Enabling auto scaling for worker nodes
-
-This module provides a managed, scalable, and production ready Kubernetes environment.
-
----
-
-### ECR Module
-
-The ECR module creates and manages the container registry used by the application.
-
-It provides:
-- A private container registry for Docker images
-- Image scanning on push
-- Lifecycle policies for image retention and cleanup
-
-This ensures container images are stored securely and managed efficiently.
-
----
-
-### Root Module Integration
-
-The root Terraform module wires all modules together by passing outputs between them, such as:
-- VPC ID
-- Subnet IDs
-- Security group IDs
-
-This approach allows the same infrastructure modules to be reused across development, staging, and production environments with minimal changes.
-
----
-
-## Helm Chart Update Process
-
-Helm is used to deploy the application to Kubernetes in a production ready and repeatable manner.
-
----
-
-### Chart Responsibilities
-
-The Helm chart defines all Kubernetes resources required to run the application, including:
-- Deployments for PHP FPM and queue workers
-- ConfigMaps for non sensitive configuration
-- Secrets for sensitive values
-- Services for internal networking
-- Ingress resources for external access
-
----
-
-### Updating an Existing Helm Chart
-
-Configuration changes should be made through `values.yaml` whenever possible.
-
-Typical updates include:
-- Image tags
+Contains configurable values used across environments, including:
+- Image repository and tag
 - Replica counts
 - Resource limits and requests
 - Environment variables
 
-Template files inside the `templates/` directory should only be modified when structural changes are required, such as:
-- Adding new Kubernetes resources
-- Changing container commands or entrypoints
-- Updating health probes or security contexts
+---
 
-This approach minimizes risk and keeps deployments predictable and easy to review.
+### templates/
 
+This directory contains the Kubernetes manifests rendered by Helm.
+
+- `_helpers.tpl`  
+  Shared template helpers for naming conventions and labels.
+
+- `configmap.yaml`  
+  Defines non sensitive application configuration.
+
+- `secret.yaml`  
+  Stores sensitive values such as application keys and credentials.
+
+- `deployment-phpfpm.yaml`  
+  Deployment running the Laravel application using PHP FPM.
+
+- `deployment-worker.yaml`  
+  Deployment running background workers using the command  
+  `php artisan queue:work`.
+
+- `service.yaml`  
+  Internal Kubernetes service exposing PHP FPM pods.
+
+- `ingress.yaml`  
+  External access configuration using Kubernetes Ingress.
+
+- `hpa-phpfpm.yaml`  
+  Horizontal Pod Autoscaler for the PHP FPM deployment.
+
+- `hpa-worker.yaml`  
+  Horizontal Pod Autoscaler for the worker deployment.
+
+---
+
+## Terraform Infrastructure Structure
+
+Terraform code is located in `laravel-10-boilerplate-infra-task` and is organized using reusable modules and environment specific configurations.
+
+---
+
+### environments/
+
+Each environment contains its own Terraform configuration and variables.
+
+- `dev/`  
+  Development environment configuration.
+
+- `staging/`  
+  Staging environment configuration.
+
+- `production/`  
+  Production environment configuration.
+
+This structure provides isolated Terraform state, controlled promotion between environments, and safe separation of resources.
+
+---
+
+### modules/
+
+Reusable Terraform modules shared across all environments.
+
+- `vpc/`  
+  Creates the VPC, public and private subnets, route tables, Internet Gateway, and NAT Gateways.
+
+- `security-group/`  
+  Defines security groups and network access rules.
+
+- `eks/`  
+  Provisions the Amazon EKS cluster and managed node groups.
+
+- `rds/`  
+  Provisions the relational database infrastructure.
+
+The root environment configurations wire these modules together by passing outputs such as VPC IDs, subnet IDs, and security group IDs between modules.
+
+---
+
+## How to Deploy Infrastructure
+
+To deploy the development environment:
+
+```bash
+cd laravel-10-boilerplate-infra-task/environments/dev
+terraform init
+terraform plan
+terraform apply
 
 
 ## Local Development Setup
