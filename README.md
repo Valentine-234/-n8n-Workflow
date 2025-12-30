@@ -415,3 +415,33 @@ terraform apply
 ```
 
 Repeat the same process for the staging or production environment directories as needed.
+
+
+## Application Deployment with Helm
+
+Validate the Helm chart locally:
+```bash
+helm lint ./helm-chart/laravel-app
+helm template laravel-app ./helm-chart/laravel-app
+```
+
+Deploy or upgrade the application:
+```bash
+helm upgrade --install laravel-app ./helm-chart/laravel-app \
+  --namespace <environment> \
+  --create-namespace
+  ```
+
+## CI/CD Execution
+
+- CI/CD pipelines are triggered automatically through GitLab.
+
+- Tests run on merge requests
+
+- Builds run after successful merges
+
+- Deployments are executed per environment based on branch
+
+- Production deployments require manual approval
+
+Helm dry run is used in CI environments when a live Kubernetes cluster is not available
