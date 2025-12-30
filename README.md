@@ -117,7 +117,7 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 
 ## Repository Structure
 
-```text
+```test
 .
 ├── helm-chart/
 │   └── laravel-app/
@@ -147,3 +147,78 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 │       └── rds/
 │
 └── README.md
+```
+
+## Helm Chart Structure
+
+The Helm chart is located in `helm-chart/laravel-app` and is responsible for deploying the Laravel application to Kubernetes in a production ready manner.
+
+### Chart.yaml
+
+Defines the Helm chart metadata such as:
+- Chart name
+- Version
+- Description
+
+---
+
+### values.yaml
+
+Contains configurable values used across environments, including:
+- Image repository and tag
+- Replica counts
+- Resource limits and requests
+- Environment variables
+
+---
+
+### templates/
+
+This directory contains the Kubernetes manifests rendered by Helm.
+
+- `_helpers.tpl`  
+  Shared template helpers for naming conventions and labels.
+
+- `configmap.yaml`  
+  Defines non sensitive application configuration.
+
+- `secret.yaml`  
+  Stores sensitive values such as application keys and credentials.
+
+- `deployment-phpfpm.yaml`  
+  Deployment running the Laravel application using PHP FPM.
+
+- `deployment-worker.yaml`  
+  Deployment running background workers using the command  
+  `php artisan queue:work`.
+
+- `service.yaml`  
+  Internal Kubernetes service exposing PHP FPM pods.
+
+- `ingress.yaml`  
+  External access configuration using Kubernetes Ingress.
+
+- `hpa-phpfpm.yaml`  
+  Horizontal Pod Autoscaler for the PHP FPM deployment.
+
+- `hpa-worker.yaml`  
+  Horizontal Pod Autoscaler for the worker deployment.
+
+---
+
+## Terraform Infrastructure Structure
+
+Terraform code is located in `laravel-10-boilerplate-infra-task` and is organized using reusable modules and environment specific configurations.
+
+---
+
+### environments/
+
+Each environment contains its own Terraform configuration and variables.
+
+- `dev/`  
+  Development environment configuration.
+
+- `staging/`  
+  Staging environment con
+
