@@ -18,7 +18,8 @@ variables:
   EKS_CLUSTER_NAME: my-eks-cluster
 
 # --------------------------------------------------
-# TEST (CI SAFE)
+# TEST
+# Runs ONLY on Merge Request to main
 # --------------------------------------------------
 test:
   stage: test
@@ -30,43 +31,54 @@ test:
   script:
     - docker version
 
-    # Create env file
+    # Validate docker-compose.yml exists
     - |
+      if [ ! -f docker-compose.yml ]; then
+        echo "ERROR docker-compose.yml not found"
+        exit 1
+      fi
+
+    # Create .env from GitLab CI variables
+    - |
+      echo "Creating .env from GitLab CI variables"
       cat <<EOF > .env
       APP_ENV=testing
       APP_KEY=$APP_KEY
       APP_DEBUG=true
       DB_CONNECTION=mysql
-      DB_HOST=ap-mysql
+      DB_HOST=mysql
       DB_PORT=3306
       DB_DATABASE=$DB_DATABASE
       DB_USERNAME=$DB_USERNAME
       DB_PASSWORD=$DB_PASSWORD
       MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-      REDIS_HOST=ap-redis
+      REDIS_HOST=redis
       CACHE_DRIVER=redis
-      QUEUE_CONNECTION=sync
-      SESSION_DRIVER=array
+      QUEUE_CONNECTION=redis
+      SESSION_DRIVER=redis
       EOF
 
-    # Start ONLY infra services
-    - docker compose up -d ap-mysql ap-redis
+    # Start services
+    - docker compose up -d
     - docker compose ps
 
-    # Wait for MySQL
+    # Wait for MySQL to be ready
     - |
+      echo "Waiting for MySQL..."
       for i in $(seq 1 30); do
-        docker compose exec -T ap-mysql mysqladmin ping -h localhost --silent && break
+        docker compose exec -T mysql mysqladmin ping -h localhost --silent && break
         sleep 2
       done
 
-    # Run migrations + tests in a one-off container
-    - docker compose run --rm ap-app php artisan migrate --force
-    - docker compose run --rm ap-app php artisan test
+    # Run migrations
+    - docker compose exec -T app php artisan migrate --force
+
+    # Run tests (this controls CI result)
+    - docker compose exec -T app php artisan test
 
   after_script:
     - docker compose logs
-    - docker compose down -v
+    #- docker compose down -v
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
@@ -74,6 +86,7 @@ test:
 
 # --------------------------------------------------
 # BUILD
+# Runs after merge to development, staging, main
 # --------------------------------------------------
 build:
   stage: build
@@ -94,6 +107,7 @@ build:
 
 # --------------------------------------------------
 # DEPLOY
+# Branch based Helm deployment
 # --------------------------------------------------
 deploy:
   stage: deploy
