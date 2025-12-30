@@ -18,10 +18,8 @@ variables:
   EKS_CLUSTER_NAME: my-eks-cluster
 
 # --------------------
-## TEST
+# TEST
 # Runs ONLY on MR to main
-# Creates .env from GitLab CI variables
-# Runs docker-compose tests
 # --------------------
 test:
   stage: test
@@ -32,10 +30,10 @@ test:
   script:
     - docker version
 
-    # Validate docker-compose.yml exists
+    # Ensure compose file exists
     - |
       if [ ! -f docker-compose.yml ]; then
-        echo "ERROR docker-compose.yml not found at repo root"
+        echo "ERROR docker-compose.yml not found"
         exit 1
       fi
 
@@ -55,12 +53,23 @@ test:
       REDIS_HOST=ap-redis
       EOF
 
-    # Run docker compose tests
-    - docker compose up --abort-on-container-exit
+    # Start services in background
+    - docker compose up -d
+
+    # Wait for MySQL to be ready
+    - |
+      echo "Waiting for MySQL to be ready"
+      for i in $(seq 1 20); do
+        docker compose exec -T ap-mysql mysqladmin ping -h localhost --silent && break
+        sleep 3
+      done
+
+    # Run tests explicitly
+    - docker compose exec -T ap-app php artisan test
 
   after_script:
-    - docker compose logs || true
-    - docker compose down || true
+    - docker compose logs
+    - docker compose down -v
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
@@ -68,8 +77,6 @@ test:
 
 # --------------------
 # BUILD
-# Runs after merge to dev, staging, main
-# Builds and pushes Docker image
 # --------------------
 build:
   stage: build
@@ -87,8 +94,6 @@ build:
 
 # --------------------
 # DEPLOY
-# Deterministic deploy by branch
-# Uses Helm
 # --------------------
 deploy:
   stage: deploy
@@ -111,6 +116,5 @@ deploy:
         --create-namespace \
         --set image.repository=$DOCKER_IMAGE \
         --set image.tag=$CI_COMMIT_SHORT_SHA
-
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
