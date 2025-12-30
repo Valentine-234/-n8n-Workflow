@@ -32,30 +32,33 @@ test:
     - docker version
     - test -f docker-compose.yml
 
-    # Create .env
+    # Create .env for CI
     - |
       cat <<EOF > .env
       APP_ENV=testing
       APP_KEY=$APP_KEY
       APP_DEBUG=true
+
       DB_CONNECTION=mysql
       DB_HOST=mysql
       DB_PORT=3306
       DB_DATABASE=$DB_DATABASE
       DB_USERNAME=$DB_USERNAME
       DB_PASSWORD=$DB_PASSWORD
+
       MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+
       REDIS_HOST=redis
       CACHE_DRIVER=redis
       QUEUE_CONNECTION=redis
       SESSION_DRIVER=redis
       EOF
 
-    # Start only infra services
+    # Start only infrastructure services
     - docker compose up -d mysql redis
     - docker compose ps
 
-    # THIS IS WHERE THE WAIT GOES
+    # Wait for MySQL to be fully ready
     - |
       echo "Waiting for MySQL to accept connections..."
       for i in $(seq 1 30); do
@@ -64,13 +67,13 @@ test:
         sleep 2
       done
 
-    # Run Laravel commands via CI container
+    # Run Laravel commands using CI container (NO php-fpm / supervisor)
     - docker compose run --rm ap-app-ci artisan migrate --force
     - docker compose run --rm ap-app-ci artisan test
 
   after_script:
     - docker compose logs mysql redis || true
-    #- docker compose down -v || true
+    - docker compose down -v || true
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
