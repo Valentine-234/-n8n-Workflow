@@ -30,26 +30,21 @@ test:
 
   script:
     - docker version
-
-    # Ensure docker-compose file exists
     - test -f docker-compose.yml
 
-    # Create .env for CI
+    # Create .env
     - |
       cat <<EOF > .env
       APP_ENV=testing
       APP_KEY=$APP_KEY
       APP_DEBUG=true
-
       DB_CONNECTION=mysql
       DB_HOST=mysql
       DB_PORT=3306
       DB_DATABASE=$DB_DATABASE
       DB_USERNAME=$DB_USERNAME
       DB_PASSWORD=$DB_PASSWORD
-
       MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-
       REDIS_HOST=redis
       CACHE_DRIVER=redis
       QUEUE_CONNECTION=redis
@@ -60,15 +55,16 @@ test:
     - docker compose up -d mysql redis
     - docker compose ps
 
-    # Wait for MySQL
+    # THIS IS WHERE THE WAIT GOES
     - |
-      echo "Waiting for MySQL..."
+      echo "Waiting for MySQL to accept connections..."
       for i in $(seq 1 30); do
-        docker compose exec -T mysql mysqladmin ping -h localhost --silent && break
+        docker compose exec -T mysql \
+          mysqladmin ping -h 127.0.0.1 -p"$MYSQL_ROOT_PASSWORD" --silent && break
         sleep 2
       done
 
-    # Run migrations and tests using CI container
+    # Run Laravel commands via CI container
     - docker compose run --rm ap-app-ci artisan migrate --force
     - docker compose run --rm ap-app-ci artisan test
 
