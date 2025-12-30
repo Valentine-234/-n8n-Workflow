@@ -19,8 +19,8 @@ variables:
 
 # --------------------
 # TEST
-# Runs ONLY on Merge Request to main
-# If this fails MR cannot be merged
+# Validates compose file existence
+# Runs ONLY on MR to main
 # --------------------
 test:
   stage: test
@@ -30,6 +30,18 @@ test:
       command: ["--tls=false"]
   script:
     - docker version
+
+    # Fail fast if compose file is missing
+    - |
+      if [ ! -f docker-compose.test.yml ]; then
+        echo "ERROR docker-compose.test.yml not found at repo root"
+        echo "Current directory contents:"
+        ls -la
+        echo "Search for docker compose files:"
+        find . -name "docker-compose*"
+        exit 1
+      fi
+
     - docker compose -f docker-compose.test.yml up --abort-on-container-exit
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
@@ -37,8 +49,7 @@ test:
 
 # --------------------
 # BUILD
-# Runs AFTER merge to development staging or main
-# Builds image and pushes to Docker Hub
+# Runs only after merge
 # --------------------
 build:
   stage: build
@@ -56,8 +67,7 @@ build:
 
 # --------------------
 # DEPLOY
-# Deploys to EKS using Helm
-# Environment selected by branch
+# Deterministic deploy by branch
 # --------------------
 deploy:
   stage: deploy
