@@ -9,7 +9,6 @@ workflow:
 
 variables:
   DOCKER_TLS_CERTDIR: ""
-  IMAGE_NAME: $DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
 
 default:
   interruptible: true
@@ -42,12 +41,18 @@ build:
     - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
   before_script:
     - |
-      if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_PASSWORD" ]; then
-        echo "Docker Hub credentials are missing"
+      if [ -z "$DOCKERHUB_USERNAME" ]; then
+        echo "ERROR: DOCKERHUB_USERNAME is not set in GitLab CI variables"
+        exit 1
+      fi
+    - |
+      if [ -z "$DOCKERHUB_PASSWORD" ]; then
+        echo "ERROR: DOCKERHUB_PASSWORD is not set in GitLab CI variables"
         exit 1
       fi
     - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
   script:
+    - export IMAGE_NAME=$DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
     - docker version
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
@@ -60,6 +65,12 @@ deploy_dev:
   image: alpine/helm:3.14.0
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
+  before_script:
+    - |
+      if [ -z "$KUBE_CONFIG_DEV" ]; then
+        echo "ERROR: KUBE_CONFIG_DEV is not set in GitLab CI variables"
+        exit 1
+      fi
   script:
     - echo "$KUBE_CONFIG_DEV" | base64 -d > kubeconfig
     - export KUBECONFIG=$PWD/kubeconfig
@@ -77,6 +88,12 @@ deploy_staging:
   image: alpine/helm:3.14.0
   rules:
     - if: '$CI_COMMIT_BRANCH == "staging"'
+  before_script:
+    - |
+      if [ -z "$KUBE_CONFIG_STAGING" ]; then
+        echo "ERROR: KUBE_CONFIG_STAGING is not set in GitLab CI variables"
+        exit 1
+      fi
   script:
     - echo "$KUBE_CONFIG_STAGING" | base64 -d > kubeconfig
     - export KUBECONFIG=$PWD/kubeconfig
@@ -95,6 +112,12 @@ deploy_prod:
   when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+  before_script:
+    - |
+      if [ -z "$KUBE_CONFIG_PROD" ]; then
+        echo "ERROR: KUBE_CONFIG_PROD is not set in GitLab CI variables"
+        exit 1
+      fi
   script:
     - echo "$KUBE_CONFIG_PROD" | base64 -d > kubeconfig
     - export KUBECONFIG=$PWD/kubeconfig
