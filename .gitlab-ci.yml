@@ -73,7 +73,7 @@ test:
 
   after_script:
     - docker compose logs mysql redis || true
-    - docker compose down -v || true
+    
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&

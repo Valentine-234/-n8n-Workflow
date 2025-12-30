@@ -79,25 +79,22 @@ services:
       - ap
 
   mysql:
-    image: mysql:8.0
-    command: mysqld --sql_mode=""
-    container_name: ap-mysql
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: "5k"
-    ports:
-      - '${FORWARD_DB_PORT:-3306}:3306'
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - ./dev/docker-compose/mysql:/docker-entrypoint-initdb.d
-    networks:
-      - ap
-    healthcheck:
+  image: mysql:8.0
+  command: mysqld --sql_mode=""
+  container_name: ap-mysql
+  restart: unless-stopped
+  ports:
+    - '${FORWARD_DB_PORT:-3306}:3306'
+  environment:
+    MYSQL_DATABASE: ${DB_DATABASE}
+    MYSQL_USER: ${DB_USERNAME}
+    MYSQL_PASSWORD: ${DB_PASSWORD}
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  volumes:
+    - ./dev/docker-compose/mysql:/docker-entrypoint-initdb.d
+  networks:
+    - ap
+  healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
