@@ -222,3 +222,39 @@ Each environment contains its own Terraform configuration and variables.
 - `staging/`  
   Staging environment con
 
+- `production/`  
+  Production environment configuration.
+
+This structure provides isolated Terraform state, controlled promotion between environments, and safe separation of resources.
+
+---
+
+### modules/
+
+Reusable Terraform modules shared across all environments.
+
+- `vpc/`  
+  Creates the VPC, public and private subnets, route tables, Internet Gateway, and NAT Gateways.
+
+- `security-group/`  
+  Defines security groups and network access rules.
+
+- `eks/`  
+  Provisions the Amazon EKS cluster and managed node groups.
+
+- `rds/`  
+  Provisions the relational database infrastructure.
+
+The root environment configurations wire these modules together by passing outputs such as VPC IDs, subnet IDs, and security group IDs between modules.
+
+---
+
+## How to Deploy Infrastructure
+
+To deploy the development environment:
+
+```bash
+cd laravel-10-boilerplate-infra-task/environments/dev
+terraform init
+terraform plan
+terraform apply
