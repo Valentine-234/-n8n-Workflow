@@ -366,8 +366,8 @@ This section outlines the common commands required to run, test, and deploy the 
 Clone the repository and move into the project directory:
 
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
+cd laravel-10-boilerplate-task
 ```
 
 ## Local Development Setup
@@ -427,8 +427,8 @@ helm template laravel-app ./helm-chart/laravel-app
 
 Deploy or upgrade the application:
 ```bash
-helm upgrade --install laravel-app ./helm-chart/laravel-app \
-  --namespace <environment> \
+helm upgrade --install laravel-10-boilerplate-task ./helm-chart/laravel-app \
+  --namespace prod-laravel-10-boilerplate-task \
   --create-namespace
   ```
 
