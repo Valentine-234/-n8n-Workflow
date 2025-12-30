@@ -14,23 +14,26 @@ default:
   interruptible: true
   retry: 1
 
-# ====================
-# TEST STAGE
-# ====================
+# ==================================================
+# TEST
+# Runs ONLY when MR targets main
+# ==================================================
 test:
   stage: test
   image: php:8.2-cli
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
   script:
     - php -v
     - cp .env.example .env
     - php artisan key:generate
     - php artisan test
 
-# ====================
-# BUILD STAGE
-# ====================
+# ==================================================
+# BUILD
+# Runs ONLY after merge to env branches
+# ==================================================
 build:
   stage: build
   image: docker:26
@@ -41,25 +44,19 @@ build:
     - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
   before_script:
     - |
-      if [ -z "$DOCKERHUB_USERNAME" ]; then
-        echo "ERROR: DOCKERHUB_USERNAME is not set in GitLab CI variables"
-        exit 1
-      fi
-    - |
-      if [ -z "$DOCKERHUB_PASSWORD" ]; then
-        echo "ERROR: DOCKERHUB_PASSWORD is not set in GitLab CI variables"
+      if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_PASSWORD" ]; then
+        echo "Docker Hub credentials missing"
         exit 1
       fi
     - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
   script:
     - export IMAGE_NAME=$DOCKERHUB_USERNAME/laravel-app:$CI_COMMIT_SHORT_SHA
-    - docker version
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
 
-# ====================
+# ==================================================
 # DEPLOY TO DEVELOPMENT
-# ====================
+# ==================================================
 deploy_dev:
   stage: deploy
   image: alpine/helm:3.14.0
@@ -68,7 +65,7 @@ deploy_dev:
   before_script:
     - |
       if [ -z "$KUBE_CONFIG_DEV" ]; then
-        echo "ERROR: KUBE_CONFIG_DEV is not set in GitLab CI variables"
+        echo "KUBE_CONFIG_DEV missing"
         exit 1
       fi
   script:
@@ -80,9 +77,9 @@ deploy_dev:
         --set image.repository=$DOCKERHUB_USERNAME/laravel-app \
         --set image.tag=$CI_COMMIT_SHORT_SHA
 
-# ====================
+# ==================================================
 # DEPLOY TO STAGING
-# ====================
+# ==================================================
 deploy_staging:
   stage: deploy
   image: alpine/helm:3.14.0
@@ -91,7 +88,7 @@ deploy_staging:
   before_script:
     - |
       if [ -z "$KUBE_CONFIG_STAGING" ]; then
-        echo "ERROR: KUBE_CONFIG_STAGING is not set in GitLab CI variables"
+        echo "KUBE_CONFIG_STAGING missing"
         exit 1
       fi
   script:
@@ -103,9 +100,10 @@ deploy_staging:
         --set image.repository=$DOCKERHUB_USERNAME/laravel-app \
         --set image.tag=$CI_COMMIT_SHORT_SHA
 
-# ====================
+# ==================================================
 # DEPLOY TO PRODUCTION
-# ====================
+# Manual approval required
+# ==================================================
 deploy_prod:
   stage: deploy
   image: alpine/helm:3.14.0
@@ -115,7 +113,7 @@ deploy_prod:
   before_script:
     - |
       if [ -z "$KUBE_CONFIG_PROD" ]; then
-        echo "ERROR: KUBE_CONFIG_PROD is not set in GitLab CI variables"
+        echo "KUBE_CONFIG_PROD missing"
         exit 1
       fi
   script:
