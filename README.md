@@ -254,7 +254,7 @@ terraform apply
 
 ### Clone Repository
 
-```bash
+
 git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
 cd laravel-10-boilerplate-task
 
