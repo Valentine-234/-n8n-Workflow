@@ -101,6 +101,148 @@ Docker images are stored in dockerhub registry.
 
 ---
 
+## Infrastructure and Deployment Documentation
+
+This section explains how infrastructure, application deployment, and CI/CD are implemented in this project.
+
+---
+
+## Laravel 10 Boilerplate DevOps Infrastructure
+
+This repository contains a complete production ready DevOps setup for a Laravel 10 application, including infrastructure provisioning, containerization, Kubernetes deployment, and CI/CD automation.
+
+---
+
+## Repository Structure
+
+```text
+.
+├── helm-chart/
+│   └── laravel-app/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
+│           ├── _helpers.tpl
+│           ├── configmap.yaml
+│           ├── deployment-phpfpm.yaml
+│           ├── deployment-worker.yaml
+│           ├── hpa-phpfpm.yaml
+│           ├── hpa-worker.yaml
+│           ├── ingress.yaml
+│           ├── secret.yaml
+│           └── service.yaml
+│
+├── laravel-10-boilerplate-infra-task/
+│   ├── environments/
+│   │   ├── dev/
+│   │   ├── staging/
+│   │   └── production/
+│   │
+│   └── modules/
+│       ├── vpc/
+│       ├── security-group/
+│       ├── eks/
+│       └── rds/
+│
+└── README.md
+
+
+## How Terraform Modules Are Used
+
+Terraform is structured using modules to promote reusability, clarity, and separation of concerns.
+
+### VPC Module
+
+The VPC module is responsible for creating the networking layer.
+
+It provisions:
+- A Virtual Private Cloud
+- Public subnets across multiple availability zones
+- Private subnets across multiple availability zones
+- Route tables and associations
+- An Internet Gateway
+- NAT Gateways for outbound access from private subnets
+
+This design ensures that the Amazon EKS cluster and worker nodes run only in private subnets while still having controlled internet access.
+
+---
+
+### EKS Module
+
+The EKS module provisions the Kubernetes control plane and worker infrastructure.
+
+It is responsible for:
+- Creating the Amazon EKS cluster
+- Provisioning managed node groups
+- Configuring IAM roles for the cluster and nodes
+- Defining security groups and networking rules
+- Setting the Kubernetes version
+- Enabling auto scaling for worker nodes
+
+This module provides a managed, scalable, and production ready Kubernetes environment.
+
+---
+
+### ECR Module
+
+The ECR module creates and manages the container registry used by the application.
+
+It provides:
+- A private container registry for Docker images
+- Image scanning on push
+- Lifecycle policies for image retention and cleanup
+
+This ensures container images are stored securely and managed efficiently.
+
+---
+
+### Root Module Integration
+
+The root Terraform module wires all modules together by passing outputs between them, such as:
+- VPC ID
+- Subnet IDs
+- Security group IDs
+
+This approach allows the same infrastructure modules to be reused across development, staging, and production environments with minimal changes.
+
+---
+
+## Helm Chart Update Process
+
+Helm is used to deploy the application to Kubernetes in a production ready and repeatable manner.
+
+---
+
+### Chart Responsibilities
+
+The Helm chart defines all Kubernetes resources required to run the application, including:
+- Deployments for PHP FPM and queue workers
+- ConfigMaps for non sensitive configuration
+- Secrets for sensitive values
+- Services for internal networking
+- Ingress resources for external access
+
+---
+
+### Updating an Existing Helm Chart
+
+Configuration changes should be made through `values.yaml` whenever possible.
+
+Typical updates include:
+- Image tags
+- Replica counts
+- Resource limits and requests
+- Environment variables
+
+Template files inside the `templates/` directory should only be modified when structural changes are required, such as:
+- Adding new Kubernetes resources
+- Changing container commands or entrypoints
+- Updating health probes or security contexts
+
+This approach minimizes risk and keeps deployments predictable and easy to review.
+
+
+
 ## Local Development Setup
 
 ### Clone Repository
