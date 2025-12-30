@@ -145,6 +145,7 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 │       └── rds/
 │
 └── README.md
+---
 
 ## Helm Chart Structure
 
@@ -157,7 +158,6 @@ Defines the Helm chart metadata such as:
 - Version
 - Description
 
----
 
 ### values.yaml
 
@@ -167,7 +167,6 @@ Contains configurable values used across environments, including:
 - Resource limits and requests
 - Environment variables
 
----
 
 ### templates/
 
@@ -201,13 +200,10 @@ This directory contains the Kubernetes manifests rendered by Helm.
 - `hpa-worker.yaml`  
   Horizontal Pod Autoscaler for the worker deployment.
 
----
 
 ## Terraform Infrastructure Structure
 
 Terraform code is located in `laravel-10-boilerplate-infra-task` and is organized using reusable modules and environment specific configurations.
-
----
 
 ### environments/
 
@@ -224,7 +220,6 @@ Each environment contains its own Terraform configuration and variables.
 
 This structure provides isolated Terraform state, controlled promotion between environments, and safe separation of resources.
 
----
 
 ### modules/
 
@@ -244,7 +239,6 @@ Reusable Terraform modules shared across all environments.
 
 The root environment configurations wire these modules together by passing outputs such as VPC IDs, subnet IDs, and security group IDs between modules.
 
----
 
 ## How to Deploy Infrastructure
 
