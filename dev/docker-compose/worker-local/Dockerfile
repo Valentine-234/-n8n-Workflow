@@ -1,83 +1,38 @@
-FROM php:8.2-cli-alpine
+FROM php:8.2-fpm-alpine
 
-ARG queueTimeout
-ARG queueTries
-ARG queues
+RUN apk --update add wget \
+  curl \
+  git \
+  grep\
+  build-base \
+  libmemcached-dev \
+  libmcrypt-dev \
+  libxml2-dev \
+  imagemagick-dev \
+  pcre-dev \
+  libtool \
+  make \
+  autoconf \
+  g++ \
+  cyrus-sasl-dev \
+  libgsasl-dev \
+  supervisor 
 
-ENV QUEUE_TIMEOUT=${queueTimeout}
-ENV QUEUE_TRIES=${queueTries}
-ENV QUEUES=${queues}
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 
-# System dependencies
-RUN apk add --no-cache \
-    git \
-    curl \
-    libpng-dev \
-    oniguruma-dev \
-    libxml2-dev \
-    zip \
-    unzip
+RUN docker-php-ext-install mysqli pdo pdo_mysql xml
+RUN pecl channel-update pecl.php.net \
+    && pecl install memcached \
+    && pecl install imagick \
+    && docker-php-ext-enable memcached \
+    && docker-php-ext-enable imagick
 
-# PHP extensions
-RUN docker-php-ext-install \
-    pdo_mysql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd
-
-# Composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin \
-    --filename=composer
+RUN rm /var/cache/apk/*
 
 WORKDIR /var/www
+# COPY . /var/www
+# RUN composer i
 
-# Queue worker
-CMD php artisan queue:work redis \
-    --queue=${QUEUES} \
-    --timeout=${QUEUE_TIMEOUT} \
-    --tries=${QUEUE_TRIES}
+COPY ./dev/docker-compose/php/supervisord-app.conf /etc/supervisord.conf
 
-FROM php:8.2-cli-alpine
-
-ARG queueTimeout
-ARG queueTries
-ARG queues
-
-ENV QUEUE_TIMEOUT=${queueTimeout}
-ENV QUEUE_TRIES=${queueTries}
-ENV QUEUES=${queues}
-
-# System dependencies
-RUN apk add --no-cache \
-    git \
-    curl \
-    libpng-dev \
-    oniguruma-dev \
-    libxml2-dev \
-    zip \
-    unzip
-
-# PHP extensions
-RUN docker-php-ext-install \
-    pdo_mysql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd
-
-# Composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin \
-    --filename=composer
-
-WORKDIR /var/www
-
-# Queue worker
-CMD php artisan queue:work redis \
-    --queue=${QUEUES} \
-    --timeout=${QUEUE_TIMEOUT} \
-    --tries=${QUEUE_TRIES}
+ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
