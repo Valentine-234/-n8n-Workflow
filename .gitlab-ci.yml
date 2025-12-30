@@ -31,7 +31,7 @@ test:
   script:
     - docker version
 
-    # Fail fast if compose file is missing
+    # Validate docker-compose.yml exists
     - |
       if [ ! -f docker-compose.yml ]; then
         echo "ERROR docker-compose.yml not found"
@@ -46,13 +46,13 @@ test:
       APP_KEY=$APP_KEY
       APP_DEBUG=true
       DB_CONNECTION=mysql
-      DB_HOST=ap-mysql
+      DB_HOST=mysql
       DB_PORT=3306
       DB_DATABASE=$DB_DATABASE
       DB_USERNAME=$DB_USERNAME
       DB_PASSWORD=$DB_PASSWORD
       MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-      REDIS_HOST=ap-redis
+      REDIS_HOST=redis
       CACHE_DRIVER=redis
       QUEUE_CONNECTION=redis
       SESSION_DRIVER=redis
@@ -66,21 +66,18 @@ test:
     - |
       echo "Waiting for MySQL..."
       for i in $(seq 1 30); do
-        docker compose exec -T ap-mysql mysqladmin ping -h localhost --silent && break
+        docker compose exec -T mysql mysqladmin ping -h localhost --silent && break
         sleep 2
       done
 
-    # Ensure DB is migrated
-    - docker compose exec -T ap-app php artisan migrate --force
+    # Run migrations
+    - docker compose exec -T app php artisan migrate --force
 
-    # Run tests and capture output
-    - |
-      set -o pipefail
-      docker compose exec -T ap-app php artisan test 2>&1 | tee test-output.log
+    # Run tests (this controls CI result)
+    - docker compose exec -T app php artisan test
 
   after_script:
     - docker compose logs
-    - cat test-output.log || true
     - docker compose down -v
 
   rules:
@@ -89,7 +86,7 @@ test:
 
 # --------------------------------------------------
 # BUILD
-# Runs after merge to dev, staging, main
+# Runs after merge to development, staging, main
 # --------------------------------------------------
 build:
   stage: build
@@ -110,7 +107,7 @@ build:
 
 # --------------------------------------------------
 # DEPLOY
-# Deterministic deployment per branch
+# Branch based Helm deployment
 # --------------------------------------------------
 deploy:
   stage: deploy
