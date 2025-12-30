@@ -258,3 +258,98 @@ cd laravel-10-boilerplate-infra-task/environments/dev
 terraform init
 terraform plan
 terraform apply
+```
+
+## CI/CD Workflow Overview
+
+This project uses GitLab CI/CD to automate testing, container image building, and application deployment.  
+The pipeline is designed to enforce quality gates and support multiple environments in a controlled promotion flow.
+
+---
+
+## Pipeline Stages
+
+The CI/CD pipeline consists of three stages:
+
+---
+
+### Test Stage
+
+The test stage is responsible for validating the application before any code is merged.
+
+- Runs only when a merge request is opened
+- Triggered specifically for merge requests targeting the `main` branch
+- Uses Docker and Docker Compose to run the application test stack
+- Fails fast if required files such as `docker-compose.yml` are missing
+- Executes application tests inside containers
+- Blocks the merge request if any test fails
+
+This ensures broken or untested code never enters shared branches.
+
+---
+
+### Build Stage
+
+The build stage runs after a successful merge.
+
+- Triggered after merge into `development`, `staging`, or `main` branches
+- Builds the application Docker image using the provided Dockerfile
+- Uses Docker in Docker for image building
+- Tags the image based on the target environment
+- Pushes the image to a container registry such as DockerHub or AWS ECR
+
+This stage produces immutable container images used for deployment.
+
+---
+
+### Deploy Stage
+
+The deploy stage is responsible for releasing the application to Kubernetes.
+
+- Uses Helm to deploy the application
+- Integrates directly with the Helm chart defined in this repository
+- Deployment behavior is controlled by the target branch
+
+---
+
+## Environment Integration
+
+The CI/CD workflow integrates with multiple environments using branch based deployment.
+
+---
+
+### Development Environment
+
+- Branch: `development`
+- Deployment: Automatic
+- Purpose: Active development and testing
+- Uses Helm with development specific configuration values
+
+---
+
+### Staging Environment
+
+- Branch: `staging`
+- Deployment: Automatic
+- Purpose: Pre production validation
+- Closely mirrors production configuration
+
+---
+
+### Production Environment
+
+- Branch: `main` or `master`
+- Deployment: Manual approval required
+- Purpose: Production release
+- Enforces an additional safety gate before deployment
+
+---
+
+## Deployment Strategy
+
+- Tests run before any merge is allowed
+- Builds occur only after successful merges
+- Deployments are environment aware and branch controlled
+- Helm dry run can be used in CI to validate Kubernetes manifests without requiring a live cluster
+
+This workflow ensures consistent, repeatable, and safe deployments across all environments.
