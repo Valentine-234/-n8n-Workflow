@@ -73,7 +73,7 @@ test:
     # Run migrations
     - docker compose exec -T app php artisan migrate --force
 
-    # Run tests (this controls CI result)
+    ## Run tests (this controls CI result)
     - docker compose exec -T app php artisan test
 
   after_script:
