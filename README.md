@@ -452,6 +452,9 @@ Helm dry run is used in CI environments when a live Kubernetes cluster is not av
 This project supports local development using Docker and Docker Compose.
 All application services including PHP FPM, Nginx, MySQL, Redis, and background workers are orchestrated via `docker-compose.yml`.
 
+![Local Development Setup for Docker-compose ](docs/WhatsApp Image 2025-12-30 at 07.45.51.jpeg)
+
+
 ### Prerequisites
 
 Ensure the following tools are installed on your machine:
