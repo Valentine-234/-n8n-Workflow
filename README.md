@@ -370,36 +370,6 @@ git clone https://gitlab.com/Emmylong1/laravel-10-boilerplate-task.git
 cd laravel-10-boilerplate-task
 ```
 
-## Local Development Setup
-
-Copy the environment configuration file:
-
-```bash
-cp .env.example .env
-```
-
-Start the local development environment using Docker Compose:
-```bash
-docker-compose up -d
-```
-
-Install dependencies and prepare the application:
-```bash
-docker-compose exec app composer install
-docker-compose exec app php artisan key:generate
-docker-compose exec app php artisan migrate
-```
-
-Run application tests locally:
-```bash
-docker-compose exec app php artisan test
-```
-
-Stop the local development environment:
-```bash
-docker-compose down
-```
-
 ## Infrastructure Deployment with Terraform
 
 Navigate to the desired environment directory:
@@ -583,3 +553,260 @@ docker compose down -v
 - PHP runs under Supervisor for process management
 
 - Nginx proxies HTTP requests to PHP FPM
+
+
+## Optional Improvements
+
+### Improving Dockerfile Security
+
+The current Dockerfile is suitable for building and running the application image, but production systems benefit from additional hardening. The following improvements are recommended best practices.
+
+#### Run as a non root user
+Create and use a dedicated user inside the container. Avoid running PHP FPM or workers as root.
+
+```dockerfile
+RUN addgroup -g 10001 app && adduser -D -G app -u 10001 app
+USER app
+```
+
+
+### Use minimal base images
+
+Prefer minimal images such as Alpine, or consider distroless for runtime layers to reduce the attack surface.
+
+#### Examples
+Alpine for runtime
+Distroless for runtime only if your app does not require a shell or package manager at runtime
+
+### Use multi stage builds
+
+Ensure build tools and compilers do not exist in the final image. Keep the final image runtime only.
+
+Recommended pattern
+Builder stage installs dependencies and builds assets
+Runtime stage only copies built artifacts
+
+### Pin package and dependency versions
+
+Avoid pulling floating latest packages. Pin Alpine packages or OS dependencies where possible to reduce supply chain uncertainty.
+
+### Reduce permissions and harden filesystem
+
+Make the root filesystem read only where possible. Write only to required directories like storage and cache.
+
+Kubernetes also helps enforce this using securityContext, but container defaults matter.
+
+### Drop Linux capabilities
+
+If you use Kubernetes, drop capabilities in the Pod securityContext. If you run Docker directly, use reduced capabilities.
+
+Kubernetes example
+```bash
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+```
+### Add a healthcheck
+
+Healthchecks help detect runtime failure early and allow orchestration platforms to self heal.
+```bash
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
+  CMD php -v >/dev/null || exit 1
+```
+### Enable image vulnerability scanning
+
+Enable scanning in your registry and in CI.
+
+DockerHub can scan images depending on plan
+AWS ECR supports scanning
+In GitLab CI, use Trivy or Grype to fail builds on critical vulnerabilities
+
+Trivy example
+```bash
+trivy image --exit-code 1 --severity HIGH,CRITICAL "$IMAGE"
+```
+### Avoid leaking secrets during build
+
+Never bake secrets into images. Avoid passing secrets using ARG in Dockerfile. Use runtime injection via Kubernetes Secrets, Vault, or GitLab masked variables.
+
+### Use explicit COPY paths and a strong .dockerignore
+
+Prevent accidental inclusion of secrets and large dev files.
+
+```bash
+Recommended in .dockerignore
+.env
+.git
+node_modules
+vendor
+storage
+tests output artifacts
+```
+### Alternative Kubernetes Deployment Without Helm
+
+This repository can be deployed without Helm by using either plain Kubernetes manifests or Kustomize overlays. This is useful when you want minimal templating and stronger GitOps workflows.
+
+Two recommended approaches are described below, including ArgoCD integration.
+
+### Option A: Plain Kubernetes Manifests
+
+Create a directory such as k8s/ containing static YAML resources.
+
+Example directory layout
+```bash
+k8s/
+  namespace.yaml
+  configmap.yaml
+  secret.yaml
+  deployment-phpfpm.yaml
+  deployment-worker.yaml
+  service.yaml
+  ingress.yaml
+  hpa-phpfpm.yaml
+  hpa-worker.yaml
+```
+
+Deploy with kubectl
+```bash
+kubectl apply -f k8s/
+```
+
+Pros
+Simple and explicit
+No templating
+Good for small projects
+
+Cons
+Harder to manage environment differences without duplication
+
+### Option B: Kustomize Overlays
+
+Kustomize allows a base configuration plus per environment overlays without templating.
+
+Recommended directory layout
+```bash
+k8s/
+  base/
+    kustomization.yaml
+    configmap.yaml
+    secret.yaml
+    deployment-phpfpm.yaml
+    deployment-worker.yaml
+    service.yaml
+    ingress.yaml
+  overlays/
+    development/
+      kustomization.yaml
+      patch.yaml
+    staging/
+      kustomization.yaml
+      patch.yaml
+    production/
+      kustomization.yaml
+      patch.yaml
+      hpa.yaml
+```
+
+Deploy production overlay
+```bash
+kubectl apply -k k8s/overlays/production
+```
+
+
+Pros
+Environment differences are clean and minimal
+No Helm templating
+Native support in kubectl
+Very GitOps friendly
+
+Cons
+Complex logic is not as flexible as Helm
+
+## GitOps Deployment Using ArgoCD
+
+ArgoCD continuously syncs Kubernetes state from Git, enabling safe, auditable deployments. This works with both plain manifests and Kustomize.
+
+ ### Install ArgoCD
+ ```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+Expose the ArgoCD server locally
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Get initial admin password
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+### ArgoCD Application for Kustomize Deployment
+
+Create argocd/application-production.yaml
+```bash
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: laravel-app-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/YOUR_NAMESPACE/YOUR_REPO.git
+    targetRevision: main
+    path: k8s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+```
+
+Apply it
+```bash
+kubectl apply -f argocd/application-production.yaml
+```
+### ArgoCD Application for Plain Manifests
+
+If you deploy from k8s/ directly, set the path to that directory.
+```bash
+source:
+  repoURL: https://gitlab.com/YOUR_NAMESPACE/YOUR_REPO.git
+  targetRevision: main
+  path: k8s
+  ```
+
+### Recommended GitOps Workflow
+
+Development branch syncs to development namespace
+Staging branch syncs to staging namespace
+Main branch syncs to production namespace
+
+Production sync can be automated or manual depending on risk tolerance.
+
+Recommended production policy
+Automated sync disabled
+Manual sync required to add a safety gate
+
+Example syncPolicy for manual production
+```bash
+syncPolicy:
+  syncOptions:
+    - CreateNamespace=true
+```
+### Summary
+
+Docker hardening focuses on reducing privilege, reducing attack surface, preventing secret leakage, and improving runtime safety.
+
+Non Helm deployment can be achieved using plain Kubernetes YAML or Kustomize overlays.
+
+ArgoCD provides GitOps based continuous deployment for both approaches with auditability, drift correction, and consistent environment promotion.
