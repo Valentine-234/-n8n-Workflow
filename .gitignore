@@ -24,3 +24,7 @@ yarn-error.log
 
 # misc
 .DS_Store
+#infra
+./laravel-10-boilerplate-infra-task/environment/dev/terraform.tfvars
+./laravel-10-boilerplate-infra-task/environment/staging/terraform.tfvars
+./laravel-10-boilerplate-infra-task/environment/production/terraform.tfvars
