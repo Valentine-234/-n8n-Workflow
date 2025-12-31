@@ -40,6 +40,18 @@ module "security" {
 }
 
 
+module "ecr" {
+  source = "../../modules/ecr"
+
+  repository_name                 = var.repository_name
+  image_tag_mutability            = var.image_tag_mutability
+  scan_on_push                    = var.scan_on_push
+  enable_lifecycle_policy         = var.enable_lifecycle_policy
+  untagged_image_retention_days   = var.untagged_image_retention_days 
+}
+
+
+
 module "rds" {
   source = "../../modules/rds"
 

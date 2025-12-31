@@ -74,3 +74,31 @@ variable "instance_class" {
   default = "db.t4g.micro"
 }
  
+
+ variable "aws_region" {
+  type = string
+}
+
+variable "project_name" {
+  type = string
+}
+
+variable "repository_name" {
+  type = string
+}
+
+variable "image_tag_mutability" {
+  type = string
+}
+
+variable "scan_on_push" {
+  type = bool
+}
+
+variable "enable_lifecycle_policy" {
+  type = bool
+}
+
+variable "untagged_image_retention_days" {
+  type = number
+}

@@ -137,14 +137,27 @@ This repository contains a complete production ready DevOps setup for a Laravel 
 ├── laravel-10-boilerplate-infra-task/
 │   ├── environments/
 │   │   ├── dev/
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── terraform.tfvars
 │   │   ├── staging/
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── terraform.tfvars
 │   │   └── production/
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── terraform.tfvars
 │   │
 │   └── modules/
 │       ├── vpc/
 │       ├── security-group/
 │       ├── eks/
-│       └── rds/
+│       ├── rds/
+│       └── ecr/
+│           ├── main.tf
+│           ├── variables.tf
+│           └── outputs.tf
 │
 └── README.md
 ```

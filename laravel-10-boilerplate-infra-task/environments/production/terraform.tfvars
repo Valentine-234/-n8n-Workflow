@@ -1,6 +1,6 @@
 # Core
 aws_region = "us-west-2"
-env        = "production"
+env        = "dev"
 project    = "laravel-10-boilerplate-task"
 
 # Networking
@@ -32,10 +32,19 @@ node_desired_size = 2
 node_min_size     = 2
 node_max_size     = 4
 
+#ecr
+repository_name = "boilerplate-task"
+
+image_tag_mutability = "IMMUTABLE"
+scan_on_push = true
+
+enable_lifecycle_policy = true
+untagged_image_retention_days = 7
+
 # RDS
 db_name     = "boilerplatedb"
 db_username = "boilerplatedb"
-db_password = "xxxxxxxxxx"
+db_password = "xxxxxxxx"
 
 instance_class    = "db.t3.micro"
 allocated_storage = 20
@@ -46,3 +55,5 @@ tags = {
   Environment = "production"
   ManagedBy   = "terraform"
 }
+
+
