@@ -8,11 +8,6 @@ variable "env" {
   description = "Environment name dev staging prod"
 }
 
-variable "project" {
-  type        = string
-  description = "Project name"
-}
-
 variable "tags" {
   type     = map(string)
   default  = {}
@@ -49,25 +44,15 @@ variable "cluster_version" {
 }
 
 variable "node_instance_types" {
-  type        = list(string)
-  description = "Node instance types"
-  default     = ["t3.medium"]
+  type = list(string)
 }
 
-variable "node_desired_size" {
-  type        = number
-  default     = 2
-}
 
-variable "node_min_size" {
-  type        = number
-  default     = 2
-}
+variable "node_desired_size" {}
 
-variable "node_max_size" {
-  type        = number
-  default     = 4
-}
+variable "node_min_size" {}
+
+variable "node_max_size" {}
 
 variable "db_name" {
   type = string
@@ -82,10 +67,7 @@ variable "db_password" {
   sensitive = true
 }
 
-variable "allocated_storage" {
-  type    = number
-  default = 20
-}
+variable "allocated_storage" {}
 
 variable "instance_class" {
   type    = string

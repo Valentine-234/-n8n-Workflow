@@ -14,13 +14,11 @@ variables:
   DOCKER_REGISTRY: docker.io
   DOCKER_IMAGE: $DOCKER_USERNAME/boilerplate-task
 
-  AWS_DEFAULT_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-west-2
   EKS_CLUSTER_NAME: my-eks-cluster
 
-# --------------------------------------------------
-# TEST
-# Runs ONLY on Merge Request to main
-# --------------------------------------------------
+# TEST STAGE
+# Runs ONLY when a Merge Request is opened to main
 test:
   stage: test
   image: docker:26
@@ -54,35 +52,31 @@ test:
       SESSION_DRIVER=redis
       EOF
 
-    # Start only infrastructure services
+    # Start infra services only
     - docker compose up -d mysql redis
-    - docker compose ps
 
-    # Wait for MySQL to be fully ready
+    # Wait for MySQL
     - |
-      echo "Waiting for MySQL to accept connections..."
+      echo "Waiting for MySQL..."
       for i in $(seq 1 30); do
         docker compose exec -T mysql \
           mysqladmin ping -h 127.0.0.1 -p"$MYSQL_ROOT_PASSWORD" --silent && break
         sleep 2
       done
 
-    # Run Laravel commands using CI container (NO php-fpm / supervisor)
+    # Run Laravel migrations & tests
     - docker compose run --rm ap-app-ci artisan migrate --force
     - docker compose run --rm ap-app-ci artisan test
 
   after_script:
     - docker compose logs mysql redis || true
-    
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
 
-# --------------------------------------------------
-# BUILD
-# Runs after merge to development, staging, main
-# --------------------------------------------------
+# BUILD STAGE
+# Runs AFTER merge to development / staging / main
 build:
   stage: build
   image: docker:26
@@ -100,17 +94,15 @@ build:
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
 
-# --------------------------------------------------
-# DEPLOY
-# Branch-based Helm deployment
-# --------------------------------------------------
+# DEPLOY STAGE
+# Helm DRY-RUN (no real EKS required)
+
 deploy:
   stage: deploy
   image: alpine:3.19
 
   before_script:
-    - apk add --no-cache bash curl aws-cli helm
-    - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+    - apk add --no-cache bash curl helm
 
   script:
     - |
@@ -122,11 +114,12 @@ deploy:
         NAMESPACE=production
       fi
 
-      helm upgrade --install app helm-chart/laravel-app \
+      helm upgrade --install laravel-app helm-chart/laravel-app \
         --namespace $NAMESPACE \
         --create-namespace \
         --set image.repository=$DOCKER_IMAGE \
-        --set image.tag=$CI_COMMIT_SHORT_SHA
+        --set image.tag=$CI_COMMIT_SHORT_SHA \
+        --dry-run
 
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(development|staging|main)$/'
