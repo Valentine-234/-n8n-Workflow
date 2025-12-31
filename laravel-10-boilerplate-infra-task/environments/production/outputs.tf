@@ -11,5 +11,5 @@ output "cluster_ca" {
 }
 
 output "vpc_id" {
-  value = module.network.vpc_id
+  value = module.vpc.vpc_id
 }

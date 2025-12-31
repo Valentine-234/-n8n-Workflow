@@ -3,7 +3,7 @@ replicaCount:
   worker: 1
 
 image:
-  repository: your-dockerhub-or-ecr-repo/laravel-app
+  repository: emmylong1/boilerplate-task
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -31,7 +31,7 @@ ingress:
     nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
     nginx.ingress.kubernetes.io/fastcgi-params-configmap: "RELEASE-NAME-fastcgi-params"
   hosts:
-    - host: app.example.com
+    - host: boilerplate-task.com
       paths:
         - path: /
           pathType: Prefix
