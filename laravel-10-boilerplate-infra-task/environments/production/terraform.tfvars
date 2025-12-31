@@ -35,7 +35,7 @@ node_max_size     = 4
 # RDS
 db_name     = "boilerplatedb"
 db_username = "boilerplatedb"
-db_password = "task12345"
+db_password = "xxxxxxxxxx"
 
 instance_class    = "db.t3.micro"
 allocated_storage = 20
