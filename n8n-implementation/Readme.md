@@ -120,9 +120,10 @@ Example payload received by the webhook:
 }
 ```
 ## Screenshots
+
 ![Screenshots](n8n-implementation/docs/Screenshots/Screenshot-2026-01-16-114813.png)
 ![Screenshots](n8n-implementation/docs/Screenshots/Screenshot-2026-01-16-122047.png)
-```
+
 ## Future Enhancements
 ```
 Severity-based routing (e.g., high → Ops, low → Dev)
