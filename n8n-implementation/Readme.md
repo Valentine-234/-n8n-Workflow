@@ -1,6 +1,8 @@
 # Incident Automation Pipeline - n8n Workflow
 
-![n8n logo](https://docs.n8n.io/assets/images/n8n-logo.png)
+## Architecture
+
+![Architecture](n8n-implementation/docs/Screenshot 2026-01-16 120052.png)
 
 A complete **incident intake, enrichment, persistence, and notification workflow** built using [n8n](https://n8n.io). This project demonstrates automation of DevOps/SRE workflows by processing incoming incidents and notifying the right team while storing incident data for tracking and analysis.
 
@@ -46,11 +48,6 @@ This workflow models a **real-world incident automation pipeline**:
 
 ---
 
-## Architecture
-
-![Architecture](n8n-implementation/docs/Screenshot 2026-01-16 120052.png)
-
-
 **Components:**
 
 1. **Webhook Node** – Receives POST requests from monitoring systems  
@@ -94,7 +91,7 @@ curl -X POST https://<your-n8n-instance>/webhook/incident \
 }'
 
 ## Workflow Steps
-
+```
 | Node                     | Purpose                                                                 |
 | ------------------------ | ----------------------------------------------------------------------- |
 | **Webhook**              | Entry point that receives incoming incident events from monitoring tools |
