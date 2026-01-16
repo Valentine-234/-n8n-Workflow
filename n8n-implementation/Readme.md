@@ -89,6 +89,7 @@ curl -X POST https://<your-n8n-instance>/webhook/incident \
     "severity": "high",
     "message": "API latency above threshold"
 }'
+```
 
 ## Workflow Steps
 ```
@@ -100,12 +101,14 @@ curl -X POST https://<your-n8n-instance>/webhook/incident \
 | **Google Sheets / Postgres** | Persists the processed incident data for tracking, auditing, and analysis |
 | **Slack / Email**        | Sends real-time notifications to the relevant team or stakeholders |
 | **Respond to Webhook**   | Confirms successful receipt and processing back to the monitoring system |
-
+```
 ## Outcome
+```
 By the end of this workflow, incidents are reliably validated, stored, and communicated to the team, ensuring visibility, traceability, and timely response while maintaining proper integration with external systems.
-
+```
+```
 ## Demo
-
+```
 ### 1. Incoming Incident
 Example payload received by the webhook:
 
@@ -115,13 +118,13 @@ Example payload received by the webhook:
   "severity": "high",
   "message": "API latency above threshold"
 }
-
+```
 ## Screenshots
 ![Screenshots](n8n-implementation/docs/Screenshots/Screenshot 2026-01-16 114813.png)
 ![Screenshots](n8n-implementation/docs/Screenshots/Screenshot 2026-01-16 122047.png)
-
+```
 ## Future Enhancements
-
+```
 Severity-based routing (e.g., high → Ops, low → Dev)
 
 Auto-close resolved incidents after X time
@@ -129,3 +132,4 @@ Auto-close resolved incidents after X time
 Deduplication for repeated alerts within short time windows
 
 Integrate Postgres / Notion dashboards for reporting
+```
