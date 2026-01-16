@@ -1,3 +1,6 @@
+**Name:**  Ifechukwu Valentine Achebe
+**Email:** iamachebe@gmail.com
+
 # Laravel 10 Boilerplate - Production DevOps Implementation
 
 <!-- Project README Header -->
@@ -23,11 +26,6 @@
 </p>
 
 <hr />
-
-
-
-**Name:**  Emmanuel Michael Ibok
-**Email:** ibokemmanuel17@gmail.com
 
 
 ## Architecture Diagram
