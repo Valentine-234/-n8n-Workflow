@@ -2,7 +2,7 @@
 
 ## Architecture
 
-![Architecture](n8n-implementation/docs/Screenshot-2026-01-16-120052.png)
+![Architecture](n8n-implementation/docs/Screenshot%202026-01-16%20120052.png)
 
 A complete **incident intake, enrichment, persistence, and notification workflow** built using [n8n](https://n8n.io). This project demonstrates automation of DevOps/SRE workflows by processing incoming incidents and notifying the right team while storing incident data for tracking and analysis.
 
